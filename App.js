@@ -1,117 +1,400 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
 import React from 'react';
-import type {Node} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import * as eva from '@eva-design/eva';
+import { ApplicationProvider, Button, Icon, Input, Layout, Text } from '@ui-kitten/components';
+import SignIn from './SignIn';
+import { KeyboardAvoidingView } from './extra/3rd-party';
+import { ImageOverlay } from './extra/image-overlay.component';
+import { StyleSheet, View } from 'react-native';
+import { ArrowForwardIcon, FacebookIcon, GoogleIcon, TwitterIcon } from './extra/icons';
+import { TouchableWithoutFeedback } from '@ui-kitten/components/devsupport';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const SignInScreen = ({ navigation }) => {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
 
-/* $FlowFixMe[missing-local-annot] The type annotation(s) required by Flow's
- * LTI update could not be added via codemod */
-const Section = ({children, title}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
+  const onSignInButtonPress = () => {
+    navigation && navigation.navigate('CreateSupplier');
+  };
 
-const App: () => Node = () => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const onSignUpButtonPress = () => {
+    navigation && navigation.navigate('SignUp');
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    <KeyboardAvoidingView>
+      <ImageOverlay
+        style={styles.container}
+        source={require('./assets/880687.jpg')}>
+        <View style={styles.signInContainer}>
+          <Text
+            style={styles.signInLabel}
+            status='control'
+            category='h4'>
+            SIGN IN
+          </Text>
+          <Button
+            style={styles.signUpButton}
+            appearance='ghost'
+            status='control'
+            size='giant'
+            onPress={onSignUpButtonPress}>
+            Sign Up
+          </Button>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        <View style={styles.formContainer}>
+          <Input
+            label='EMAIL'
+            placeholder='Email'
+            status='control'
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input
+            style={styles.passwordInput}
+            secureTextEntry={true}
+            placeholder='Password'
+            label='PASSWORD'
+            status='control'
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
+        <Button
+          status='control'
+          size='large'
+          onPress={onSignInButtonPress}>
+          SIGN IN
+        </Button>
+      </ImageOverlay>
+    </KeyboardAvoidingView>
   );
 };
 
+const SignUpScreen = ({ navigation }) => {
+  const [names, setNames] = React.useState("");
+  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [location, setLocation] = React.useState("");
+  const [secureTextEntry, setSecureTextEntry] = React.useState(true);
+  const [userName, setUserName] = React.useState("");
+
+  const onSignInButtonPress = () => {
+    navigation && navigation.navigate('ViewProducts');
+  };
+
+  const onSignUpButtonPress = () => {
+    navigation && navigation.navigate('SignIn');
+  };
+
+  const toggleSecureEntry = () => {
+    setSecureTextEntry(!secureTextEntry);
+  };
+
+  const renderIcon = (props) => (
+    <TouchableWithoutFeedback onPress={toggleSecureEntry}>
+      <Icon {...props} name={secureTextEntry ? 'eye-off' : 'eye'} />
+    </TouchableWithoutFeedback>
+  );
+
+  return (
+    <KeyboardAvoidingView>
+      <ImageOverlay
+        style={styles.container}
+        source={require('./assets/1088280.jpg')}>
+        <View style={styles.signInContainer}>
+          <Text
+            style={styles.signInLabel}
+            status='control'
+            category='h4'>
+            SIGN UP
+          </Text>
+          <Button
+            style={styles.signUpButton}
+            appearance='ghost'
+            status='control'
+            size='giant'
+            onPress={onSignUpButtonPress}>
+            Sign In
+          </Button>
+        </View>
+        <View style={styles.formContainer}>
+          <Input
+            label='NAMES'
+            placeholder='Full Name'
+            status='control'
+            value={names}
+            onChangeText={setNames}
+          />
+          <Input
+            label='LOCATION'
+            placeholder='Location'
+            status='control'
+            value={location}
+            onChangeText={setLocation}
+          />
+          <Input
+            label='PHONE NUMBER'
+            placeholder='0788888888'
+            status='control'
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+          />
+          <Input
+            label='EMAIL'
+            placeholder='Email'
+            status='control'
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input
+            label='USER NAME'
+            placeholder='User name'
+            status='control'
+            value={userName}
+            onChangeText={setUserName}
+          />
+          <Input
+            style={styles.passwordInput}
+            placeholder='Password'
+            label='PASSWORD'
+            status='control'
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={secureTextEntry}
+          />
+        </View>
+        <Button
+          status='control'
+          size='large'
+          onPress={onSignInButtonPress}>
+          SIGN UP
+        </Button>
+      </ImageOverlay>
+    </KeyboardAvoidingView>
+  );
+};
+
+const CreateSupplierScreen = ({ navigation }) => {
+  const [names, setNames] = React.useState("");
+  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [secureTextEntry, setSecureTextEntry] = React.useState(true);
+  const [address, setAddress] = React.useState("");
+  const [userName, setUserName] = React.useState("");
+
+  const onSignInButtonPress = () => {
+    navigation && navigation.goBack();
+  };
+
+  const onSignUpButtonPress = () => {
+    navigation && navigation.navigate('SignUp1');
+  };
+
+  const toggleSecureEntry = () => {
+    setSecureTextEntry(!secureTextEntry);
+  };
+
+  const renderIcon = (props) => (
+    <TouchableWithoutFeedback onPress={toggleSecureEntry}>
+      <Icon {...props} name={secureTextEntry ? 'eye-off' : 'eye'} />
+    </TouchableWithoutFeedback>
+  );
+
+  return (
+    <KeyboardAvoidingView>
+      <ImageOverlay
+        style={styles.container}
+        source={require('./assets/880687.jpg')}>
+        <View style={styles.signInContainer}>
+          <Text
+            style={styles.signInLabel}
+            status='control'
+            category='h4'>
+            CREATE SUPPLIER
+          </Text>
+        </View>
+        <View style={styles.formContainer}>
+          <Input
+            label='FULL NAME'
+            placeholder='Full Name'
+            status='control'
+            value={names}
+            onChangeText={setNames}
+          />
+          <Input
+            label='ADDRESS'
+            placeholder='Address'
+            status='control'
+            value={address}
+            onChangeText={setAddress}
+          />
+          <Input
+            label='PHONE NUMBER'
+            placeholder='0788888888'
+            status='control'
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+          />
+          <Input
+            label='EMAIL'
+            placeholder='Email'
+            status='control'
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input
+            label='USER NAME'
+            placeholder='User name'
+            status='control'
+            value={userName}
+            onChangeText={setUserName}
+          />
+          <Input
+            style={styles.passwordInput}
+            placeholder='Password'
+            label='PASSWORD'
+            status='control'
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={secureTextEntry}
+          />
+        </View>
+        <Button
+          status='control'
+          size='large'
+          onPress={onSignInButtonPress}>
+          CREATE SUPPLIER
+        </Button>
+      </ImageOverlay>
+    </KeyboardAvoidingView>
+  );
+};
+
+const CreateProductScreen = ({ navigation }) => {
+  const [names, setNames] = React.useState("");
+  const [price, setPrice] = React.useState("");
+  const [manufactureDate, setManufactureDate] = React.useState("");
+  const [expiryDate, setExpiryDate] = React.useState("");
+
+  const onSignInButtonPress = () => {
+    navigation && navigation.goBack();
+  };
+
+  const onSignUpButtonPress = () => {
+    navigation && navigation.navigate('SignUp1');
+  };
+
+  return (
+    <KeyboardAvoidingView>
+      <ImageOverlay
+        style={styles.container}
+        source={require('./assets/image-background.jpg')}>
+        <View style={styles.signInContainer}>
+          <Text
+            style={styles.signInLabel}
+            status='control'
+            category='h4'>
+            CREATE PRODUCT
+          </Text>
+        </View>
+        <View style={styles.formContainer}>
+          <Input
+            label='NAME'
+            placeholder='Name'
+            status='control'
+            value={names}
+            onChangeText={setNames}
+          />
+          <Input
+            label='MANUFACTURE DATE'
+            placeholder='Manufacture Date'
+            status='control'
+            value={manufactureDate}
+            onChangeText={setManufactureDate}
+          />
+          <Input
+            label='EXPIRY DATE'
+            placeholder='Expiry Date'
+            status='control'
+            value={expiryDate}
+            onChangeText={setExpiryDate}
+          />
+          <Input
+            label='PRICE'
+            placeholder='Price'
+            status='control'
+            value={price}
+            onChangeText={setPrice}
+          />
+        </View>
+        <Button
+          status='control'
+          size='large'
+          onPress={onSignInButtonPress}>
+          CREATE PRODUCT
+        </Button>
+      </ImageOverlay>
+    </KeyboardAvoidingView>
+  );
+};
+
+const Stack = createNativeStackNavigator();
+
+export default () => (
+  <ApplicationProvider {...eva} theme={eva.light}>
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="SignIn" component={SignInScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="CreateSupplier" component={CreateSupplierScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  </ApplicationProvider>
+);
+
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  signInContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  socialAuthContainer: {
+    marginTop: 48,
   },
-  highlight: {
-    fontWeight: '700',
+  evaButton: {
+    maxWidth: 72,
+    paddingHorizontal: 0,
+  },
+  formContainer: {
+    flex: 1,
+    marginTop: 48,
+  },
+  passwordInput: {
+    marginTop: 16,
+  },
+  signInLabel: {
+    flex: 1,
+  },
+  signUpButton: {
+    flexDirection: 'row-reverse',
+    paddingHorizontal: 0,
+  },
+  socialAuthButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+  socialAuthHintText: {
+    alignSelf: 'center',
+    marginBottom: 16,
   },
 });
 
-export default App;
