@@ -127,11 +127,11 @@ export const ViewProductScreen = ({ navigation }) => {
         <KeyboardAvoidingView
             style={styles.container}
             offset={keyboardOffset}>
-            {/* <CommentList
+            <CommentList
                 style={styles.commentList}
                 data={product.comments}
                 ListHeaderComponent={renderHeader()}
-            /> */}
+            />
         </KeyboardAvoidingView>
     );
 };
