@@ -377,7 +377,7 @@ const CreateProductScreen = ({ navigation }) => {
 	const [manufactureDate, setManufactureDate] = React.useState("");
 	const [expiryDate, setExpiryDate] = React.useState("");
 	const [description, setDescription] = React.useState("");
-	const [singleFile, setSingleFile] = useState(null);
+	const [singleFile, setSingleFile] = React.useState(null);
 
 	const uploadImage = async () => {
 		// Check if any file is selected or not
@@ -400,11 +400,12 @@ const CreateProductScreen = ({ navigation }) => {
 			);
 			let responseJson = await res.json();
 			if (responseJson.status == 1) {
-				alert('Upload Successful');
+				ToastAndroid.show('Upload Successful', ToastAndroid.SHORT);
+				navigation && navigation.navigate('ViewProducts', { userCategory: 'supplier' });
 			}
 		} else {
 			// If no file selected the show alert
-			alert('Please Select File first');
+			ToastAndroid.show('Please Select File first', ToastAndroid.SHORT);
 		}
 	};
 
@@ -448,7 +449,7 @@ const CreateProductScreen = ({ navigation }) => {
 			},
 			body: JSON.stringify({
 				target: 'create-product',
-				names: names,
+				name: names,
 				price: price,
 				manufactureDate: manufactureDate,
 				expiryDate: expiryDate,
@@ -459,7 +460,7 @@ const CreateProductScreen = ({ navigation }) => {
 			.then((json) => {
 				ToastAndroid.show(json.message, ToastAndroid.SHORT);
 				if (json.value == 1) {
-					navigation && navigation.navigate('ViewProducts', { userCategory: 'supplier' });
+					uploadImage();
 				}
 			})
 	};
@@ -620,6 +621,31 @@ const styles = StyleSheet.create({
 	socialAuthHintText: {
 		alignSelf: 'center',
 		marginBottom: 16,
+	},
+	buttonStyle: {
+		backgroundColor: '#307ecc',
+		borderWidth: 1,
+		color: '#FFFFFF',
+		borderColor: '#307ecc',
+		height: 40,
+		alignItems: 'center',
+		borderRadius: 30,
+		marginLeft: 35,
+		marginRight: 35,
+		marginTop: 15,
+	},
+	buttonTextStyle: {
+		color: '#FFFFFF',
+		paddingVertical: 10,
+		fontSize: 16,
+	},
+	textStyle: {
+		backgroundColor: '#fff',
+		fontSize: 15,
+		marginTop: 16,
+		marginLeft: 35,
+		marginRight: 35,
+		textAlign: 'center',
 	},
 });
 
