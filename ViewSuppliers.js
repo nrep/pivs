@@ -29,18 +29,16 @@ export const OverflowMenuSimpleUsageShowcase = () => {
     );
 
     return (
-        <Layout level='1'>
-            <OverflowMenu
-                anchor={renderToggleButton}
-                visible={visible}
-                selectedIndex={selectedIndex}
-                onSelect={onItemSelect}
-                onBackdropPress={() => setVisible(false)}>
-                <MenuItem title='Users' />
-                <MenuItem title='Orders' />
-                <MenuItem title='Transactions' />
-            </OverflowMenu>
-        </Layout>
+        <OverflowMenu
+            anchor={renderToggleButton}
+            visible={visible}
+            selectedIndex={selectedIndex}
+            onSelect={onItemSelect}
+            onBackdropPress={() => setVisible(false)}>
+            <MenuItem title='Users' />
+            <MenuItem title='Orders' />
+            <MenuItem title='Transactions' />
+        </OverflowMenu>
     );
 };
 
@@ -57,6 +55,14 @@ const PlusIcon = (props) => (
 )
 
 export const ViewSuppliersScreen = ({ navigation }) => {
+    const [suppliers, setSuppliers] = React.useState([]);
+
+    React.useEffect(() => {
+        fetch('http://standtogetherforchange.org/api.php?target=suppliers')
+            .then(response => response.json())
+            .then(data => setSuppliers(data));
+    }, []);
+
     const onNewButton = () => {
         navigation && navigation.navigate('CreateSupplier');
     };
@@ -68,39 +74,23 @@ export const ViewSuppliersScreen = ({ navigation }) => {
                     NEW
                 </Button>
             </View>
+            {Array.isArray(suppliers) && suppliers.map((supplier, index) => (
+                <ListItem
+                    title={`${supplier.FullName}`}
+                    description={`Email: ${supplier.Email} Phone: ${supplier.PhoneNumber}`}
+                    accessoryLeft={ItemImage}
+                    accessoryRight={OverflowMenuSimpleUsageShowcase}
+                />
+            ))}
             <ListItem
-                title='UI Kitten'
-                description='A set of React Native components'
+                title="Elvis Peace"
+                description={`Email: elvisrugero@gmail.com Phone: 0788888888`}
                 accessoryLeft={ItemImage}
                 accessoryRight={OverflowMenuSimpleUsageShowcase}
             />
             <ListItem
-                title='UI Kitten'
-                description='A set of React Native components'
-                accessoryLeft={ItemImage}
-                accessoryRight={OverflowMenuSimpleUsageShowcase}
-            />
-            <ListItem
-                title='UI Kitten'
-                description='A set of React Native components'
-                accessoryLeft={ItemImage}
-                accessoryRight={OverflowMenuSimpleUsageShowcase}
-            />
-            <ListItem
-                title='UI Kitten'
-                description='A set of React Native components'
-                accessoryLeft={ItemImage}
-                accessoryRight={OverflowMenuSimpleUsageShowcase}
-            />
-            <ListItem
-                title='UI Kitten'
-                description='A set of React Native components'
-                accessoryLeft={ItemImage}
-                accessoryRight={OverflowMenuSimpleUsageShowcase}
-            />
-            <ListItem
-                title='UI Kitten'
-                description='A set of React Native components'
+                title="Umukunzi Elyse"
+                description={`Email: elyseeumukunzi@gmail.com Phone: 0788888888`}
                 accessoryLeft={ItemImage}
                 accessoryRight={OverflowMenuSimpleUsageShowcase}
             />

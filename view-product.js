@@ -15,28 +15,28 @@ import { CommentList } from './extra/comment-list.component';
 import { Product, ProductColor } from './extra/data-1';
 import QRCode from 'react-native-qrcode-svg';
 
-const product: Product = Product.pinkChair();
+const product = Product.pinkChair();
 
-const keyboardOffset = (height: number): number => Platform.select({
+const keyboardOffset = (height) => Platform.select({
     android: 0,
     ios: height,
 });
 
-export const ViewProductScreen = ({ navigation }): React.ReactElement => {
-
-    const [comment, setComment] = React.useState<string>();
-    const [selectedColorIndex, setSelectedColorIndex] = React.useState<number>();
+export const ViewProductScreen = ({ navigation }) => {
+    const [comment, setComment] = React.useState("");
+    const [selectedColorIndex, setSelectedColorIndex] = React.useState(0);
+    const [products, setProducts] = React.useState([]);
     const styles = useStyleSheet(themedStyles);
 
-    const onBuyButtonPress = (): void => {
+    const onBuyButtonPress = () => {
         navigation && navigation.navigate('Payment');
     };
 
-    const onAddButtonPress = (): void => {
+    const onAddButtonPress = () => {
         navigation && navigation.navigate('ShoppingCart');
     };
 
-    const renderColorItem = (color: ProductColor, index: number): React.ReactElement => (
+    const renderColorItem = (color, index) => (
         <Radio
             key={index}
             style={styles.colorRadio}
@@ -45,7 +45,7 @@ export const ViewProductScreen = ({ navigation }): React.ReactElement => {
         </Radio>
     );
 
-    const renderHeader = (): React.ReactElement => (
+    const renderHeader = () => (
         <Layout style={styles.header}>
             <ImageBackground
                 style={styles.image}

@@ -1,10 +1,10 @@
 import React from 'react';
 import * as eva from '@eva-design/eva';
-import { ApplicationProvider, Button, Icon, IconRegistry, Input, Layout, Select, Text } from '@ui-kitten/components';
+import { ApplicationProvider, Button, Datepicker, Icon, IconRegistry, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
 import { ViewProductScreen } from './view-product';
 import { KeyboardAvoidingView } from './extra/3rd-party';
 import { ImageOverlay } from './extra/image-overlay.component';
-import { StyleSheet, ToastAndroid, View } from 'react-native';
+import { StyleSheet, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { ArrowForwardIcon, FacebookIcon, GoogleIcon, TwitterIcon } from './extra/icons';
 import { IndexPath, TouchableWithoutFeedback } from '@ui-kitten/components/devsupport';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -13,6 +13,7 @@ import { ViewSuppliersScreen } from './ViewSuppliers';
 import { EvaIconsPack } from '@ui-kitten/eva-icons';
 import { ProductListScreen } from './product-list';
 // import { EvaIconsPack } from '@ui-kitten/eva-icons';
+import DocumentPicker from 'react-native-document-picker';
 
 const SignInScreen = ({ navigation }) => {
 	const [email, setEmail] = React.useState("");
@@ -53,6 +54,9 @@ const SignInScreen = ({ navigation }) => {
 						}
 					}
 				})
+				.catch((error) => {
+					ToastAndroid.show(error, ToastAndroid.SHORT);
+				})
 		}
 	};
 
@@ -70,7 +74,7 @@ const SignInScreen = ({ navigation }) => {
 						style={styles.signInLabel}
 						status='control'
 						category='h4'>
-						{selectedIndex.row == 0 ? "MANAGER" : "SUPPLIER"}
+						SIGN IN
 					</Text>
 					<Button
 						style={styles.signUpButton}
@@ -99,8 +103,10 @@ const SignInScreen = ({ navigation }) => {
 						onChangeText={setPassword}
 					/>
 					<Select
+						label={"Category"}
 						selectedIndex={selectedIndex}
-						onSelect={index => setSelectedIndex(index)}>
+						onSelect={index => setSelectedIndex(index)}
+						style={styles.passwordInput}>
 						<SelectItem title='Manager' />
 						<SelectItem title='Supplier' />
 						<SelectItem title='Customer' />
@@ -255,7 +261,29 @@ const CreateSupplierScreen = ({ navigation }) => {
 	const [userName, setUserName] = React.useState("");
 
 	const onSignInButtonPress = () => {
-		navigation && navigation.goBack();
+		fetch('http://standtogetherforchange.org/api.php', {
+			method: 'POST',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				target: 'create-supplier',
+				names: names,
+				phoneNumber: phoneNumber,
+				email: email,
+				password: password,
+				address: address,
+				userName: userName,
+			})
+		})
+			.then((response) => response.json())
+			.then((json) => {
+				ToastAndroid.show(json.message, ToastAndroid.SHORT);
+				if (json.value == 1) {
+					navigation && navigation.navigate('ViewSuppliers');
+				}
+			})
 	};
 
 	const onSignUpButtonPress = () => {
@@ -329,6 +357,7 @@ const CreateSupplierScreen = ({ navigation }) => {
 						value={password}
 						onChangeText={setPassword}
 						secureTextEntry={secureTextEntry}
+						accessoryRight={renderIcon}
 					/>
 				</View>
 				<Button
@@ -348,9 +377,91 @@ const CreateProductScreen = ({ navigation }) => {
 	const [manufactureDate, setManufactureDate] = React.useState("");
 	const [expiryDate, setExpiryDate] = React.useState("");
 	const [description, setDescription] = React.useState("");
+	const [singleFile, setSingleFile] = useState(null);
+
+	const uploadImage = async () => {
+		// Check if any file is selected or not
+		if (singleFile != null) {
+			// If file selected then create FormData
+			const fileToUpload = singleFile;
+			const data = new FormData();
+			data.append('name', 'Image Upload');
+			data.append('file_attachment', fileToUpload);
+			// Please change file upload URL
+			let res = await fetch(
+				'http://localhost/upload.php',
+				{
+					method: 'post',
+					body: data,
+					headers: {
+						'Content-Type': 'multipart/form-data; ',
+					},
+				}
+			);
+			let responseJson = await res.json();
+			if (responseJson.status == 1) {
+				alert('Upload Successful');
+			}
+		} else {
+			// If no file selected the show alert
+			alert('Please Select File first');
+		}
+	};
+
+	const selectFile = async () => {
+		// Opening Document Picker to select one file
+		try {
+			const res = await DocumentPicker.pick({
+				// Provide which type of file you want user to pick
+				type: [DocumentPicker.types.allFiles],
+				// There can me more options as well
+				// DocumentPicker.types.allFiles
+				// DocumentPicker.types.images
+				// DocumentPicker.types.plainText
+				// DocumentPicker.types.audio
+				// DocumentPicker.types.pdf
+			});
+			// Printing the log realted to the file
+			console.log('res : ' + JSON.stringify(res));
+			// Setting the state to show single file attributes
+			setSingleFile(res);
+		} catch (err) {
+			setSingleFile(null);
+			// Handling any exception (If any)
+			if (DocumentPicker.isCancel(err)) {
+				// If user canceled the document selection
+				alert('Canceled');
+			} else {
+				// For Unknown Error
+				alert('Unknown Error: ' + JSON.stringify(err));
+				throw err;
+			}
+		}
+	};
 
 	const onSignInButtonPress = () => {
-		navigation && navigation.goBack();
+		fetch('http://standtogetherforchange.org/api.php', {
+			method: 'POST',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				target: 'create-product',
+				names: names,
+				price: price,
+				manufactureDate: manufactureDate,
+				expiryDate: expiryDate,
+				description: description,
+			})
+		})
+			.then((response) => response.json())
+			.then((json) => {
+				ToastAndroid.show(json.message, ToastAndroid.SHORT);
+				if (json.value == 1) {
+					navigation && navigation.navigate('ViewProducts', { userCategory: 'supplier' });
+				}
+			})
 	};
 
 	const onSignUpButtonPress = () => {
@@ -378,19 +489,17 @@ const CreateProductScreen = ({ navigation }) => {
 						value={names}
 						onChangeText={setNames}
 					/>
-					<Input
+					<Datepicker
 						label='MANUFACTURE DATE'
-						placeholder='Manufacture Date'
 						status='control'
-						value={manufactureDate}
-						onChangeText={setManufactureDate}
+						date={manufactureDate}
+						onSelect={setManufactureDate}
 					/>
-					<Input
+					<Datepicker
 						label='EXPIRY DATE'
-						placeholder='Expiry Date'
 						status='control'
-						value={expiryDate}
-						onChangeText={setExpiryDate}
+						date={expiryDate}
+						onSelect={setExpiryDate}
 					/>
 					<Input
 						label='DESCRIPTION'
@@ -408,8 +517,27 @@ const CreateProductScreen = ({ navigation }) => {
 						value={price}
 						onChangeText={setPrice}
 					/>
+					{singleFile != null && (
+						<Text style={styles.textStyle}>
+							File Name: {singleFile.name ? singleFile.name : ''}
+							{'\n'}
+							Type: {singleFile.type ? singleFile.type : ''}
+							{'\n'}
+							File Size: {singleFile.size ? singleFile.size : ''}
+							{'\n'}
+							URI: {singleFile.uri ? singleFile.uri : ''}
+							{'\n'}
+						</Text>
+					)}
+					<TouchableOpacity
+						style={styles.buttonStyle}
+						activeOpacity={0.5}
+						onPress={selectFile}>
+						<Text style={styles.buttonTextStyle}>Select File</Text>
+					</TouchableOpacity>
 				</View>
 				<Button
+					style={styles.passwordInput}
 					status='control'
 					size='large'
 					onPress={onSignInButtonPress}>
