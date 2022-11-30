@@ -1,7 +1,7 @@
 import React from 'react';
 import * as eva from '@eva-design/eva';
 import { ApplicationProvider, Button, Icon, IconRegistry, Input, Layout, Text } from '@ui-kitten/components';
-import ViewProductScreen from './view-product';
+import { ViewProductScreen } from './view-product';
 import { KeyboardAvoidingView } from './extra/3rd-party';
 import { ImageOverlay } from './extra/image-overlay.component';
 import { StyleSheet, View } from 'react-native';
@@ -19,7 +19,13 @@ const SignInScreen = ({ navigation }) => {
 	const [password, setPassword] = React.useState("");
 
 	const onSignInButtonPress = () => {
-		navigation && navigation.navigate('ViewSuppliers');
+		if (email === "manager" && password === "manager") {
+			navigation && navigation.navigate('ViewSuppliers');
+		} else if (email == "supplier" && password == "supplier") {
+			navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
+		} else if (email == "customer" && password == "customer") {
+			navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
+		}
 	};
 
 	const onSignUpButtonPress = () => {
@@ -86,7 +92,7 @@ const SignUpScreen = ({ navigation }) => {
 	const [userName, setUserName] = React.useState("");
 
 	const onSignInButtonPress = () => {
-		navigation && navigation.navigate('ViewProducts');
+		navigation && navigation.navigate('ViewProducts', { userCategory: 'customer' });
 	};
 
 	const onSignUpButtonPress = () => {
@@ -358,19 +364,31 @@ const CreateProductScreen = ({ navigation }) => {
 
 const Stack = createNativeStackNavigator();
 
+function Auth() {
+	return (
+		<Stack.Navigator>
+			<Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
+			<Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+		</Stack.Navigator>
+	);
+}
+
+const Stack1 = createNativeStackNavigator();
+
 export default () => (
 	<>
 		<IconRegistry icons={EvaIconsPack} />
 		<ApplicationProvider {...eva} theme={eva.light}>
 			<NavigationContainer>
 				<Stack.Navigator>
-					<Stack.Screen name="SignIn" component={ViewProductScreen} />
-					<Stack.Screen name="SignUp" component={SignUpScreen} />
-					<Stack.Screen name="CreateSupplier" component={CreateSupplierScreen} />
-					<Stack.Screen name='CreateProduct' component={CreateProductScreen} />
-					<Stack.Screen name='ViewSuppliers' component={ViewSuppliersScreen} />
-					<Stack.Screen name='ViewProducts' component={ProductListScreen} />
-					<Stack.Screen name='ViewProduct' component={ViewProductScreen} />
+					<Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
+					<Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+					{/* <Stack1.Screen name="Auth" component={Auth} options={{ headerShown: false }} /> */}
+					<Stack1.Screen name="CreateSupplier" component={CreateSupplierScreen} />
+					<Stack1.Screen name='CreateProduct' component={CreateProductScreen} />
+					<Stack1.Screen name='ViewSuppliers' component={ViewSuppliersScreen} />
+					<Stack1.Screen name='ViewProducts' component={ProductListScreen} />
+					<Stack1.Screen name='ViewProduct' component={ViewProductScreen} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</ApplicationProvider>

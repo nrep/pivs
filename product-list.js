@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dimensions, ImageBackground, ListRenderItemInfo, View } from 'react-native';
-import { Button, Card, List, StyleService, Text, useStyleSheet } from '@ui-kitten/components';
+import { Button, Card, Icon, List, StyleService, Text, useStyleSheet } from '@ui-kitten/components';
 import { CartIcon } from './extra/icons';
 import { Product } from './extra/data';
 
@@ -19,7 +19,9 @@ export const ProductListScreen = ({ navigation, route }) => {
 
     const styles = useStyleSheet(themedStyles);
 
-    const displayProducts= products.filter(product => product.category === route.name);
+    const displayProducts = products.filter(product => product.category === route.name);
+
+    const { userCategory } = route.params;
 
     const onItemPress = (index) => {
         navigation && navigation.navigate('ViewProduct');
@@ -67,13 +69,29 @@ export const ProductListScreen = ({ navigation, route }) => {
         </Card>
     );
 
+    const PlusIcon = (props) => (
+        <Icon {...props} name='plus' />
+    )
+
+    const onNewButton = () => {
+        navigation && navigation.navigate('CreateProduct');
+    };
+
     return (
-        <List
-            contentContainerStyle={styles.productList}
-            data={displayProducts.length && displayProducts || products}
-            numColumns={2}
-            renderItem={renderProductItem}
-        />
+        <>
+            {userCategory === "supplier" && <View>
+                <Button style={styles.button} status='primary' accessoryLeft={PlusIcon} onPress={onNewButton}>
+                    NEW
+                </Button>
+            </View>
+            }
+            <List
+                contentContainerStyle={styles.productList}
+                data={displayProducts.length && displayProducts || products}
+                numColumns={2}
+                renderItem={renderProductItem}
+            />
+        </>
     );
 };
 

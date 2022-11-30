@@ -13,9 +13,7 @@ import {
 import { KeyboardAvoidingView } from './extra/keyboard-avoiding-view.component';
 import { CommentList } from './extra/comment-list.component';
 import { Product, ProductColor } from './extra/data-1';
-
-
-var QRCode = require('@remobile/react-native-qrcode');
+import QRCode from 'react-native-qrcode-svg';
 
 const product: Product = Product.pinkChair();
 
@@ -24,7 +22,7 @@ const keyboardOffset = (height: number): number => Platform.select({
     ios: height,
 });
 
-export default ({ navigation }): React.ReactElement => {
+export const ViewProductScreen = ({ navigation }): React.ReactElement => {
 
     const [comment, setComment] = React.useState<string>();
     const [selectedColorIndex, setSelectedColorIndex] = React.useState<number>();
@@ -56,11 +54,9 @@ export default ({ navigation }): React.ReactElement => {
             <Layout
                 style={styles.detailsContainer}
                 level='1'>
-                {/* <QRCode
-                    text={"https://www.google.com"}
-                    width={156}
-                    height={156} /> */}
-                <Text
+                <QRCode
+                    value={"https://www.google.com"} />
+                {/* <Text
                     category='h6'>
                     {product.title}
                 </Text>
@@ -74,13 +70,13 @@ export default ({ navigation }): React.ReactElement => {
                     style={styles.price}
                     category='h4'>
                     {product.price}
-                </Text>
+                </Text> */}
                 <Text
                     style={styles.description}
                     appearance='hint'>
                     {product.description}
                 </Text>
-                <Text
+                {/* <Text
                     style={styles.sectionLabel}
                     category='h6'>
                     Size:
@@ -100,7 +96,7 @@ export default ({ navigation }): React.ReactElement => {
                     selectedIndex={selectedColorIndex}
                     onChange={setSelectedColorIndex}>
                     {product.colors.map(renderColorItem)}
-                </RadioGroup>
+                </RadioGroup> */}
                 <View style={styles.actionContainer}>
                     <Button
                         style={styles.actionButton}
@@ -108,22 +104,22 @@ export default ({ navigation }): React.ReactElement => {
                         onPress={onBuyButtonPress}>
                         BUY
                     </Button>
-                    <Button
+                    {/* <Button
                         style={styles.actionButton}
                         size='giant'
                         status='control'
                         onPress={onAddButtonPress}>
                         ADD TO BAG
-                    </Button>
+                    </Button> */}
                 </View>
             </Layout>
-            <Input
+            {/* <Input
                 style={styles.commentInput}
                 label={evaProps => <Text {...evaProps} style={styles.commentInputLabel}>Comments</Text>}
                 placeholder='Write your comment'
                 value={comment}
                 onChangeText={setComment}
-            />
+            /> */}
         </Layout>
     );
 
@@ -131,11 +127,11 @@ export default ({ navigation }): React.ReactElement => {
         <KeyboardAvoidingView
             style={styles.container}
             offset={keyboardOffset}>
-            <CommentList
+            {/* <CommentList
                 style={styles.commentList}
                 data={product.comments}
                 ListHeaderComponent={renderHeader()}
-            />
+            /> */}
         </KeyboardAvoidingView>
     );
 };
