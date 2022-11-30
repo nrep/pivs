@@ -1,12 +1,12 @@
 import React from 'react';
 import * as eva from '@eva-design/eva';
-import { ApplicationProvider, Button, Icon, IconRegistry, Input, Layout, Text } from '@ui-kitten/components';
+import { ApplicationProvider, Button, Icon, IconRegistry, Input, Layout, Select, Text } from '@ui-kitten/components';
 import { ViewProductScreen } from './view-product';
 import { KeyboardAvoidingView } from './extra/3rd-party';
 import { ImageOverlay } from './extra/image-overlay.component';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, ToastAndroid, View } from 'react-native';
 import { ArrowForwardIcon, FacebookIcon, GoogleIcon, TwitterIcon } from './extra/icons';
-import { TouchableWithoutFeedback } from '@ui-kitten/components/devsupport';
+import { IndexPath, TouchableWithoutFeedback } from '@ui-kitten/components/devsupport';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { ViewSuppliersScreen } from './ViewSuppliers';
@@ -17,6 +17,7 @@ import { ProductListScreen } from './product-list';
 const SignInScreen = ({ navigation }) => {
 	const [email, setEmail] = React.useState("");
 	const [password, setPassword] = React.useState("");
+	const [selectedIndex, setSelectedIndex] = React.useState(new IndexPath(0));
 
 	const onSignInButtonPress = () => {
 		if (email === "manager" && password === "manager") {
@@ -25,6 +26,33 @@ const SignInScreen = ({ navigation }) => {
 			navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
 		} else if (email == "customer" && password == "customer") {
 			navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
+		} else {
+			fetch('http://standtogetherforchange.org/api.php', {
+				method: 'POST',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					target: 'sign-in',
+					email: email,
+					password: password,
+					userCategory: selectedIndex.row == 0 ? "manager" : selectedIndex.row == 1 ? "supplier" : "customer"
+				})
+			})
+				.then((response) => response.json())
+				.then((json) => {
+					ToastAndroid.show(json.message, ToastAndroid.SHORT);
+					if (json.value == 1) {
+						if (json.userCategory == "manager") {
+							navigation && navigation.navigate('ViewSuppliers');
+						} else if (json.userCategory == "supplier") {
+							navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
+						} else if (json.userCategory == "customer") {
+							navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
+						}
+					}
+				})
 		}
 	};
 
@@ -42,7 +70,7 @@ const SignInScreen = ({ navigation }) => {
 						style={styles.signInLabel}
 						status='control'
 						category='h4'>
-						SIGN IN
+						{selectedIndex.row == 0 ? "MANAGER" : "SUPPLIER"}
 					</Text>
 					<Button
 						style={styles.signUpButton}
@@ -70,6 +98,13 @@ const SignInScreen = ({ navigation }) => {
 						value={password}
 						onChangeText={setPassword}
 					/>
+					<Select
+						selectedIndex={selectedIndex}
+						onSelect={index => setSelectedIndex(index)}>
+						<SelectItem title='Manager' />
+						<SelectItem title='Supplier' />
+						<SelectItem title='Customer' />
+					</Select>
 				</View>
 				<Button
 					status='control'
@@ -92,7 +127,29 @@ const SignUpScreen = ({ navigation }) => {
 	const [userName, setUserName] = React.useState("");
 
 	const onSignInButtonPress = () => {
-		navigation && navigation.navigate('ViewProducts', { userCategory: 'customer' });
+		fetch('http://standtogetherforchange.org/api.php', {
+			method: 'POST',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				target: 'sign-up',
+				names: names,
+				phoneNumber: phoneNumber,
+				email: email,
+				password: password,
+				location: location,
+				userName: userName,
+			})
+		})
+			.then((response) => response.json())
+			.then((json) => {
+				ToastAndroid.show(json.message, ToastAndroid.SHORT);
+				if (json.value == 1) {
+					navigation && navigation.navigate('ViewProducts', { userCategory: 'customer' });
+				}
+			})
 	};
 
 	const onSignUpButtonPress = () => {
@@ -174,6 +231,7 @@ const SignUpScreen = ({ navigation }) => {
 						value={password}
 						onChangeText={setPassword}
 						secureTextEntry={secureTextEntry}
+						accessoryRight={renderIcon}
 					/>
 				</View>
 				<Button
