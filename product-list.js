@@ -3,6 +3,8 @@ import { Dimensions, ImageBackground, ListRenderItemInfo, View } from 'react-nat
 import { Button, Card, Icon, List, StyleService, Text, useStyleSheet } from '@ui-kitten/components';
 import { CartIcon } from './extra/icons';
 import { Product } from './extra/data';
+import axios from 'axios';
+import Reactotron from 'reactotron-react-native'
 
 const products = [
     Product.pinkChair(),
@@ -15,40 +17,66 @@ const products = [
     Product.woodChair(),
 ];
 
-export const ProductListScreen = ({ navigation, route }) => {
+var baseUrl = "https://standtogetherforchange.org";
 
+export const ProductListScreen = ({ navigation, route }) => {
+    let [products, setProducts] = React.useState([]);
     const styles = useStyleSheet(themedStyles);
+
+    React.useEffect(() => {
+        const fetchData = async () => {
+            const params = {
+                target: 'products',
+            };
+            try {
+                // get the data from the api
+                const response = await axios({
+                    method: 'get',
+                    url: `${baseUrl}/api.php`,
+                    params: params,
+                });
+                // set the data to the products state
+                setProducts(response.data);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const displayProducts = products.filter(product => product.category === route.name);
 
     const { userCategory } = route.params;
 
-    const onItemPress = (index) => {
-        navigation && navigation.navigate('ViewProduct');
+    const onItemPress = (item) => {
+        navigation && navigation.navigate('ViewProduct', { item, userCategory });
     };
 
     const onItemCartPress = (index) => {
         navigation && navigation.navigate('ShoppingCart');
     };
 
-    const renderItemFooter = (info) => (
-        <View style={styles.itemFooter}>
-            <Text category='s1'>
-                {info.item.formattedPrice}
-            </Text>
-            <Button
+    const renderItemFooter = (info) => {
+        Reactotron.log({info});
+        return (
+            <View style={styles.itemFooter}>
+                <Text category='s1'>
+                    {info.item.Price} RWF
+                </Text>
+                {/* <Button
                 style={styles.iconButton}
                 size='small'
                 accessoryLeft={CartIcon}
                 onPress={() => onItemCartPress(info.index)}
-            />
-        </View>
-    );
+            /> */}
+            </View>
+        );
+    }
 
     const renderItemHeader = (info) => (
         <ImageBackground
             style={styles.itemHeader}
-            source={info.item.image}
+            source={require('./assets/image-product-3.jpg')}
         />
     );
 
@@ -57,14 +85,14 @@ export const ProductListScreen = ({ navigation, route }) => {
             style={styles.productItem}
             header={() => renderItemHeader(info)}
             footer={() => renderItemFooter(info)}
-            onPress={() => onItemPress(info.index)}>
+            onPress={() => onItemPress(info.item)}>
             <Text category='s1'>
-                {info.item.title}
+                {info.item.ProductName}
             </Text>
             <Text
                 appearance='hint'
                 category='c1'>
-                {info.item.category}
+                {info.item.Description}
             </Text>
         </Card>
     );
@@ -87,7 +115,7 @@ export const ProductListScreen = ({ navigation, route }) => {
             }
             <List
                 contentContainerStyle={styles.productList}
-                data={displayProducts.length && displayProducts || products}
+                data={products}
                 numColumns={2}
                 renderItem={renderProductItem}
             />

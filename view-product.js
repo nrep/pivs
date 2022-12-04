@@ -22,11 +22,13 @@ const keyboardOffset = (height) => Platform.select({
     ios: height,
 });
 
-export const ViewProductScreen = ({ navigation }) => {
+export const ViewProductScreen = ({ navigation, route }) => {
     const [comment, setComment] = React.useState("");
     const [selectedColorIndex, setSelectedColorIndex] = React.useState(0);
     const [products, setProducts] = React.useState([]);
     const styles = useStyleSheet(themedStyles);
+
+    const { item, userCategory } = route.params;
 
     const onBuyButtonPress = () => {
         navigation && navigation.navigate('Payment');
@@ -49,32 +51,38 @@ export const ViewProductScreen = ({ navigation }) => {
         <Layout style={styles.header}>
             <ImageBackground
                 style={styles.image}
-                source={product.image}
+                source={require('./assets/image-product-3.jpg')}
             />
             <Layout
                 style={styles.detailsContainer}
                 level='1'>
                 <QRCode
-                    value={"https://www.google.com"} />
-                {/* <Text
+                    value={JSON.stringify({
+                        id: item.ProductId,
+                        name: item.ProductName,
+                        price: item.Price,
+                    })} />
+                <Text
                     category='h6'>
-                    {product.title}
+                    {item.ProductName}
                 </Text>
+                <Text
+                    style={styles.price}
+                    category='h4'>
+                    {item.Price}
+                </Text>
+                {/*
                 <Text
                     style={styles.subtitle}
                     appearance='hint'
                     category='p2'>
                     {product.subtitle}
                 </Text>
-                <Text
-                    style={styles.price}
-                    category='h4'>
-                    {product.price}
-                </Text> */}
+                */}
                 <Text
                     style={styles.description}
                     appearance='hint'>
-                    {product.description}
+                    {item.Description}
                 </Text>
                 {/* <Text
                     style={styles.sectionLabel}
@@ -129,7 +137,7 @@ export const ViewProductScreen = ({ navigation }) => {
             offset={keyboardOffset}>
             <CommentList
                 style={styles.commentList}
-                data={product.comments}
+                data={[]}
                 ListHeaderComponent={renderHeader()}
             />
         </KeyboardAvoidingView>

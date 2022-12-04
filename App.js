@@ -1,3 +1,7 @@
+if (__DEV__) {
+	import('./ReactotronConfig').then(() => console.log('Reactotron Configured'))
+}
+
 import React from 'react';
 import * as eva from '@eva-design/eva';
 import { ApplicationProvider, Button, Datepicker, Icon, IconRegistry, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
@@ -14,54 +18,80 @@ import { EvaIconsPack } from '@ui-kitten/eva-icons';
 import { ProductListScreen } from './product-list';
 // import { EvaIconsPack } from '@ui-kitten/eva-icons';
 import DocumentPicker from 'react-native-document-picker';
+import Reactotron from 'reactotron-react-native'
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { Image } from 'react-native-svg';
+import { ViewCategoriesScreen } from './category-list';
+
+var baseUrl = "https://standtogetherforchange.org";
 
 const SignInScreen = ({ navigation }) => {
 	const [email, setEmail] = React.useState("");
 	const [password, setPassword] = React.useState("");
 	const [selectedIndex, setSelectedIndex] = React.useState(new IndexPath(0));
 
-	const onSignInButtonPress = () => {
-		if (email === "manager" && password === "manager") {
-			navigation && navigation.navigate('ViewSuppliers');
-		} else if (email == "supplier" && password == "supplier") {
-			navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
-		} else if (email == "customer" && password == "customer") {
-			navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
-		} else {
-			fetch('http://standtogetherforchange.org/api.php', {
-				method: 'POST',
-				headers: {
-					Accept: 'application/json',
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					target: 'sign-in',
-					email: email,
-					password: password,
-					userCategory: selectedIndex.row == 0 ? "manager" : selectedIndex.row == 1 ? "supplier" : "customer"
-				})
-			})
-				.then((response) => response.json())
-				.then((json) => {
-					ToastAndroid.show(json.message, ToastAndroid.SHORT);
-					if (json.value == 1) {
-						if (json.userCategory == "manager") {
-							navigation && navigation.navigate('ViewSuppliers');
-						} else if (json.userCategory == "supplier") {
-							navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
-						} else if (json.userCategory == "customer") {
-							navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
-						}
+	const onSignInButtonPress = async () => {
+		try {
+			var data = {
+				target: 'sign-in',
+				email: email,
+				password: password,
+				userCategory: selectedIndex.row == 0 ? "manager" : selectedIndex.row == 1 ? "supplier" : "customer"
+			}
+
+			const response = await axios({
+				method: 'get',
+				url: `${baseUrl}/api.php`,
+				params: data,
+			});
+
+			Reactotron.log({
+				response, data
+			});
+
+			if (response.status === 200) {
+				let responseJson = response.data;
+				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+				if (responseJson.value == 1) {
+					await storeSession(responseJson);
+					if (responseJson.userCategory == "manager") {
+						navigation && navigation.navigate('Manager');
+					} else if (responseJson.userCategory == "supplier") {
+						navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
+					} else if (responseJson.userCategory == "customer") {
+						navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
 					}
-				})
-				.catch((error) => {
-					ToastAndroid.show(error, ToastAndroid.SHORT);
-				})
+				}
+			} else {
+				// Reactotron.log(response);
+				throw new Error("An error has occurred");
+			}
+		} catch (error) {
+			Reactotron.log({ error });
+			console.error(error);
 		}
 	};
 
 	const onSignUpButtonPress = () => {
 		navigation && navigation.navigate('SignUp');
+	};
+
+	const storeSession = async (data) => {
+		try {
+			await AsyncStorage.setItem(
+				'@session',
+				JSON.stringify(data)
+			);
+
+			Reactotron.log({
+				message: "Session stored successfully",
+				data: await AsyncStorage.getItem('@session')
+			});
+		} catch (error) {
+			// Error saving data
+		}
 	};
 
 	return (
@@ -107,9 +137,9 @@ const SignInScreen = ({ navigation }) => {
 						selectedIndex={selectedIndex}
 						onSelect={index => setSelectedIndex(index)}
 						style={styles.passwordInput}>
-						<SelectItem title='Manager' />
-						<SelectItem title='Supplier' />
-						<SelectItem title='Customer' />
+						<SelectItem title='Manager' value='Manager' />
+						<SelectItem title='Supplier' value='Supplier' />
+						<SelectItem title='Customer' value='Customer' />
 					</Select>
 				</View>
 				<Button
@@ -155,6 +185,9 @@ const SignUpScreen = ({ navigation }) => {
 				if (json.value == 1) {
 					navigation && navigation.navigate('ViewProducts', { userCategory: 'customer' });
 				}
+			})
+			.catch((error) => {
+				ToastAndroid.show(error, ToastAndroid.SHORT);
 			})
 	};
 
@@ -259,15 +292,29 @@ const CreateSupplierScreen = ({ navigation }) => {
 	const [secureTextEntry, setSecureTextEntry] = React.useState(true);
 	const [address, setAddress] = React.useState("");
 	const [userName, setUserName] = React.useState("");
+	const [selectedIndex, setSelectedIndex] = React.useState(new IndexPath(0));
+	const [categories, setCategories] = React.useState([]);
 
-	const onSignInButtonPress = () => {
-		fetch('http://standtogetherforchange.org/api.php', {
-			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
+	React.useEffect(() => {
+		const fetchData = async () => {
+			fetch(`${baseUrl}/api.php?target=categories`)
+				.then((response) => response.json())
+				.then((json) => {
+					setCategories(json);
+					Reactotron.log(json);
+				})
+		};
+
+		fetchData();
+	}, []);
+
+	const onSignInButtonPress = async () => {
+		try {
+			let session = await AsyncStorage.getItem('@session');
+			session = JSON.parse(session);
+			const managerId = session.id;
+
+			var data = {
 				target: 'create-supplier',
 				names: names,
 				phoneNumber: phoneNumber,
@@ -275,19 +322,39 @@ const CreateSupplierScreen = ({ navigation }) => {
 				password: password,
 				address: address,
 				userName: userName,
-			})
-		})
-			.then((response) => response.json())
-			.then((json) => {
-				ToastAndroid.show(json.message, ToastAndroid.SHORT);
-				if (json.value == 1) {
-					navigation && navigation.navigate('ViewSuppliers');
-				}
-			})
-	};
+				category: categories[selectedIndex.row].CategoryId,
+				managerId: managerId
+			}
 
-	const onSignUpButtonPress = () => {
-		navigation && navigation.navigate('SignUp1');
+			Reactotron.log(data);
+
+			const response = await axios({
+				method: 'get',
+				url: `${baseUrl}/api.php`,
+				params: data,
+			});
+
+			Reactotron.log({
+				response, data
+			});
+
+			if (response.status === 200) {
+				let responseJson = response.data;
+				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+				if (responseJson.value == 1) {
+					ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+					if (responseJson.value == 1) {
+						navigation && navigation.navigate('ViewSuppliers');
+					}
+				}
+			} else {
+				// Reactotron.log(response);
+				throw new Error("An error has occurred");
+			}
+		} catch (error) {
+			Reactotron.log({ error });
+			console.error(error);
+		}
 	};
 
 	const toggleSecureEntry = () => {
@@ -359,8 +426,18 @@ const CreateSupplierScreen = ({ navigation }) => {
 						secureTextEntry={secureTextEntry}
 						accessoryRight={renderIcon}
 					/>
+					<Select
+						label={"Category"}
+						selectedIndex={selectedIndex}
+						onSelect={index => setSelectedIndex(index)}
+						style={styles.passwordInput}>
+						{Array.isArray(categories) && categories.map((category, index) => (
+							<SelectItem title={category.CategoryName} value={category.CategoryName} key={index} />
+						))}
+					</Select>
 				</View>
 				<Button
+					style={styles.passwordInput}
 					status='control'
 					size='large'
 					onPress={onSignInButtonPress}>
@@ -414,7 +491,7 @@ const CreateProductScreen = ({ navigation }) => {
 		try {
 			const res = await DocumentPicker.pick({
 				// Provide which type of file you want user to pick
-				type: [DocumentPicker.types.allFiles],
+				type: [DocumentPicker.types.images],
 				// There can me more options as well
 				// DocumentPicker.types.allFiles
 				// DocumentPicker.types.images
@@ -440,33 +517,51 @@ const CreateProductScreen = ({ navigation }) => {
 		}
 	};
 
-	const onSignInButtonPress = () => {
-		fetch('http://standtogetherforchange.org/api.php', {
-			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
+	const onSignInButtonPress = async () => {
+		try {
+			let session = await AsyncStorage.getItem('@session');
+			session = JSON.parse(session);
+			const supplierId = session.id;
+
+			var data = {
 				target: 'create-product',
 				name: names,
 				price: price,
 				manufactureDate: manufactureDate,
 				expiryDate: expiryDate,
 				description: description,
-			})
-		})
-			.then((response) => response.json())
-			.then((json) => {
-				ToastAndroid.show(json.message, ToastAndroid.SHORT);
-				if (json.value == 1) {
-					uploadImage();
-				}
-			})
-	};
+				supplierId: supplierId
+			}
 
-	const onSignUpButtonPress = () => {
-		navigation && navigation.navigate('SignUp1');
+			Reactotron.log({ data });
+
+			const response = await axios({
+				method: 'get',
+				url: `${baseUrl}/api.php`,
+				params: data,
+			});
+
+			Reactotron.log({
+				response, data
+			});
+
+			if (response.status === 200) {
+				let responseJson = response.data;
+				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+				if (responseJson.value == 1) {
+					ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+					if (responseJson.value == 1) {
+						await uploadImage();
+					}
+				}
+			} else {
+				// Reactotron.log(response);
+				throw new Error("An error has occurred");
+			}
+		} catch (error) {
+			Reactotron.log({ error });
+			console.error(error);
+		}
 	};
 
 	return (
@@ -549,6 +644,78 @@ const CreateProductScreen = ({ navigation }) => {
 	);
 };
 
+const CreateCategoryScreen = ({ navigation }) => {
+	const [name, setName] = React.useState("");
+	const [description, setDescription] = React.useState("");
+
+	const onSignInButtonPress = async () => {
+		try {
+			var data = {
+				target: 'create-category',
+				name,
+				description,
+			}
+
+			const response = await axios({
+				method: 'get',
+				url: `${baseUrl}/api.php`,
+				params: data,
+			});
+
+			Reactotron.log({
+				response, data
+			});
+
+			if (response.status === 200) {
+				let responseJson = response.data;
+				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+				if (responseJson.value == 1) {
+					navigation && navigation.navigate('ViewCategories');
+				}
+			} else {
+				// Reactotron.log(response);
+				throw new Error("An error has occurred");
+			}
+		} catch (error) {
+			Reactotron.log({ error });
+			console.error(error);
+		}
+	};
+
+	return (
+		<KeyboardAvoidingView>
+			<ImageOverlay
+				style={styles.container}
+				source={require('./assets/880687.jpg')}>
+				<View style={styles.formContainer}>
+					<Input
+						label='NAME'
+						placeholder='name'
+						status='control'
+						value={name}
+						onChangeText={setName}
+					/>
+					<Input
+						label='DESCRIPTION'
+						placeholder='Description'
+						status='control'
+						value={description}
+						onChangeText={setDescription}
+						multiline={true}
+						numberOfLines={4}
+					/>
+				</View>
+				<Button
+					status='control'
+					size='large'
+					onPress={onSignInButtonPress}>
+					CREATE CATEGORY
+				</Button>
+			</ImageOverlay>
+		</KeyboardAvoidingView>
+	);
+};
+
 const Stack = createNativeStackNavigator();
 
 function Auth() {
@@ -557,10 +724,18 @@ function Auth() {
 			<Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
 			<Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
 		</Stack.Navigator>
+	)
+}
+const Drawer = createDrawerNavigator();
+
+function ManagerScreens() {
+	return (
+		<Drawer.Navigator>
+			<Drawer.Screen name='ViewSuppliers' component={ViewSuppliersScreen} />
+			<Drawer.Screen name="ViewCategories" component={ViewCategoriesScreen} />
+		</Drawer.Navigator>
 	);
 }
-
-const Stack1 = createNativeStackNavigator();
 
 export default () => (
 	<>
@@ -568,14 +743,13 @@ export default () => (
 		<ApplicationProvider {...eva} theme={eva.light}>
 			<NavigationContainer>
 				<Stack.Navigator>
-					<Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
-					<Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-					{/* <Stack1.Screen name="Auth" component={Auth} options={{ headerShown: false }} /> */}
-					<Stack1.Screen name="CreateSupplier" component={CreateSupplierScreen} />
-					<Stack1.Screen name='CreateProduct' component={CreateProductScreen} />
-					<Stack1.Screen name='ViewSuppliers' component={ViewSuppliersScreen} />
-					<Stack1.Screen name='ViewProducts' component={ProductListScreen} />
-					<Stack1.Screen name='ViewProduct' component={ViewProductScreen} />
+					<Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
+					<Stack.Screen name="Manager" component={ManagerScreens} options={{ headerShown: false }} />
+					<Stack.Screen name="CreateSupplier" component={CreateSupplierScreen} />
+					<Stack.Screen name="CreateCategory" component={CreateCategoryScreen} />
+					<Stack.Screen name="CreateProduct" component={CreateProductScreen} />
+					<Stack.Screen name="ViewProducts" component={ProductListScreen} />
+					<Stack.Screen name="ViewProduct" component={ViewProductScreen} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</ApplicationProvider>

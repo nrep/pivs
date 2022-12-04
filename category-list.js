@@ -7,14 +7,6 @@ import axios from 'axios';
 
 var baseUrl = "https://standtogetherforchange.org";
 
-const InstallButton = (props) => (
-    <Icon
-        style={styles.icon}
-        fill='#8F9BB3'
-        name='arrow-down-outline'
-    />
-);
-
 export const OverflowMenuSimpleUsageShowcase = () => {
 
     const [selectedIndex, setSelectedIndex] = React.useState(null);
@@ -47,29 +39,17 @@ export const OverflowMenuSimpleUsageShowcase = () => {
     );
 };
 
-const ItemImage = (props) => (
-    <Avatar
-        {...props}
-        style={[props.style, { tintColor: null }]}
-        source={require('./assets/image-background.jpg')}
-    />
-);
-
 const PlusIcon = (props) => (
     <Icon {...props} name='plus' />
 )
 
-export const ViewSuppliersScreen = ({ navigation }) => {
-    const [suppliers, setSuppliers] = React.useState([]);
+export const ViewCategoriesScreen = ({ navigation }) => {
+    const [categories, setCategories] = React.useState([]);
 
     React.useEffect(() => {
         const fetchData = async () => {
-            let session = await AsyncStorage.getItem('@session');
-            session = JSON.parse(session);
-            const managerId = session.id;
             const params = {
-                target: 'suppliers',
-                managerId: managerId
+                target: 'categories',
             };
             try {
                 // get the data from the api
@@ -85,7 +65,7 @@ export const ViewSuppliersScreen = ({ navigation }) => {
                 // convert the data to json
                 if (response.status === 200) {
                     // set state with the result
-                    setSuppliers(response.data);
+                    setCategories(response.data);
                 } else {
                     // Reactotron.log(response);
                     throw new Error("An error has occurred");
@@ -101,22 +81,20 @@ export const ViewSuppliersScreen = ({ navigation }) => {
     }, []);
 
     const onNewButton = () => {
-        navigation && navigation.navigate('CreateSupplier');
+        navigation && navigation.navigate('CreateCategory');
     };
 
     return (
         <>
             <View>
-                <Button style={styles.button} status='primary' accessoryLeft={PlusIcon} onPress={onNewButton}>
+                <Button status='primary' accessoryLeft={PlusIcon} onPress={onNewButton}>
                     NEW
                 </Button>
             </View>
-            {Array.isArray(suppliers) && suppliers.map((supplier, index) => (
+            {Array.isArray(categories) && categories.map((category, index) => (
                 <ListItem
                     key={index}
-                    title={`${supplier.FullName}`}
-                    description={`Email: ${supplier.Email} Phone: ${supplier.PhoneNumber}`}
-                    accessoryLeft={ItemImage}
+                    title={`${category.CategoryName}`}
                     accessoryRight={OverflowMenuSimpleUsageShowcase}
                 />
             ))}
