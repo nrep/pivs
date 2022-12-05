@@ -4,12 +4,11 @@ if (__DEV__) {
 
 import React from 'react';
 import * as eva from '@eva-design/eva';
-import { ApplicationProvider, Button, Datepicker, Icon, IconRegistry, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
+import { ApplicationProvider, Button, Card, Datepicker, Icon, IconRegistry, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
 import { ViewProductScreen } from './view-product';
 import { KeyboardAvoidingView } from './extra/3rd-party';
 import { ImageOverlay } from './extra/image-overlay.component';
 import { StyleSheet, ToastAndroid, TouchableOpacity, View } from 'react-native';
-import { ArrowForwardIcon, FacebookIcon, GoogleIcon, TwitterIcon } from './extra/icons';
 import { IndexPath, TouchableWithoutFeedback } from '@ui-kitten/components/devsupport';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -22,10 +21,29 @@ import Reactotron from 'reactotron-react-native'
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { Image } from 'react-native-svg';
 import { ViewCategoriesScreen } from './category-list';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import ScanScreen from './qr-code-scanner';
+import QRScanner from './qr-code-scanner';
+import { ViewOrdersScreen } from './order-list';
 
 var baseUrl = "https://standtogetherforchange.org";
+
+const storeSession = async (data) => {
+	try {
+		await AsyncStorage.setItem(
+			'@session',
+			JSON.stringify(data)
+		);
+
+		Reactotron.log({
+			message: "Session stored successfully",
+			data: await AsyncStorage.getItem('@session')
+		});
+	} catch (error) {
+		// Error saving data
+	}
+};
 
 const SignInScreen = ({ navigation }) => {
 	const [email, setEmail] = React.useState("");
@@ -61,7 +79,7 @@ const SignInScreen = ({ navigation }) => {
 					} else if (responseJson.userCategory == "supplier") {
 						navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
 					} else if (responseJson.userCategory == "customer") {
-						navigation && navigation.navigate('ViewProducts', { userCategory: "customer" });
+						navigation && navigation.navigate('Customer', { userCategory: "customer" });
 					}
 				}
 			} else {
@@ -76,22 +94,6 @@ const SignInScreen = ({ navigation }) => {
 
 	const onSignUpButtonPress = () => {
 		navigation && navigation.navigate('SignUp');
-	};
-
-	const storeSession = async (data) => {
-		try {
-			await AsyncStorage.setItem(
-				'@session',
-				JSON.stringify(data)
-			);
-
-			Reactotron.log({
-				message: "Session stored successfully",
-				data: await AsyncStorage.getItem('@session')
-			});
-		} catch (error) {
-			// Error saving data
-		}
 	};
 
 	return (
@@ -162,14 +164,9 @@ const SignUpScreen = ({ navigation }) => {
 	const [secureTextEntry, setSecureTextEntry] = React.useState(true);
 	const [userName, setUserName] = React.useState("");
 
-	const onSignInButtonPress = () => {
-		fetch('http://standtogetherforchange.org/api.php', {
-			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
+	const onSignInButtonPress = async () => {
+		try {
+			var data = {
 				target: 'sign-up',
 				names: names,
 				phoneNumber: phoneNumber,
@@ -177,18 +174,33 @@ const SignUpScreen = ({ navigation }) => {
 				password: password,
 				location: location,
 				userName: userName,
-			})
-		})
-			.then((response) => response.json())
-			.then((json) => {
-				ToastAndroid.show(json.message, ToastAndroid.SHORT);
-				if (json.value == 1) {
-					navigation && navigation.navigate('ViewProducts', { userCategory: 'customer' });
+			}
+
+			const response = await axios({
+				method: 'get',
+				url: `${baseUrl}/api.php`,
+				params: data,
+			});
+
+			Reactotron.log({
+				response, data
+			});
+
+			if (response.status === 200) {
+				let responseJson = response.data;
+				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+				if (responseJson.value == 1) {
+					await storeSession(responseJson);
+					navigation && navigation.navigate('Customer', { userCategory: 'customer' });
 				}
-			})
-			.catch((error) => {
-				ToastAndroid.show(error, ToastAndroid.SHORT);
-			})
+			} else {
+				// Reactotron.log(response);
+				throw new Error("An error has occurred");
+			}
+		} catch (error) {
+			Reactotron.log({ error });
+			console.error(error);
+		}
 	};
 
 	const onSignUpButtonPress = () => {
@@ -716,6 +728,115 @@ const CreateCategoryScreen = ({ navigation }) => {
 	);
 };
 
+const CreateOrderScreen = ({ navigation, route }) => {
+	const [quantity, setQuantity] = React.useState(1);
+	const [totalPrice, setTotalPrice] = React.useState(0);
+
+	const { product } = route.params;
+
+	React.useEffect(() => {
+		setTotalPrice(quantity * product.price);
+	}, [product]);
+
+	React.useEffect(() => {
+		setTotalPrice(quantity * product.price);
+	}, [quantity])
+
+	const onSignInButtonPress = async () => {
+		try {
+			let session = await AsyncStorage.getItem('@session');
+			session = JSON.parse(session);
+			const customerId = session.id;
+
+			var data = {
+				target: 'create-order',
+				customerId,
+				productId: product.id,
+				quantity
+			}
+
+			const response = await axios({
+				method: 'get',
+				url: `${baseUrl}/api.php`,
+				params: data,
+			});
+
+			Reactotron.log({
+				response, data
+			});
+
+			if (response.status === 200) {
+				let responseJson = response.data;
+				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
+				if (responseJson.value == 1) {
+					navigation && navigation.navigate('ViewOrders');
+				}
+			} else {
+				// Reactotron.log(response);
+				throw new Error("An error has occurred");
+			}
+		} catch (error) {
+			Reactotron.log({ error });
+			console.error(error);
+		}
+	};
+
+	return (
+		<KeyboardAvoidingView>
+			<ImageOverlay
+				style={styles.container}
+				source={require('./assets/880687.jpg')}>
+				<Card>
+					<View style={styles.formContainer}>
+						<Layout style={styles.layoutContainer}>
+							<Layout style={styles.layout} level='4'>
+								<Text category='s1'>Product Name:</Text>
+							</Layout>
+							<Layout style={styles.layout} level='3'>
+								<Text>{product.name}</Text>
+							</Layout>
+						</Layout>
+						<Layout style={styles.layoutContainer}>
+							<Layout style={styles.layout} level='4'>
+								<Text category='s1'>Unit Price:</Text>
+							</Layout>
+							<Layout style={styles.layout} level='3'>
+								<Text>{product.price}</Text>
+							</Layout>
+						</Layout>
+						<Layout style={styles.layoutContainer}>
+							<Layout style={styles.layout} level='4'>
+								<Text category='s1'>Quantity:</Text>
+							</Layout>
+							<Layout style={styles.layout} level='3'>
+								<Input
+									placeholder='Enter Quantity'
+									value={quantity}
+									onChangeText={setQuantity}
+								/>
+							</Layout>
+						</Layout>
+						<Layout style={styles.layoutContainer}>
+							<Layout style={styles.layout} level='4'>
+								<Text category='s1'>Total Price:</Text>
+							</Layout>
+							<Layout style={styles.layout} level='3'>
+								<Text category='s1'>{totalPrice}</Text>
+							</Layout>
+						</Layout>
+						<Button
+							status='control'
+							size='large'
+							onPress={onSignInButtonPress}>
+							CREATE ORDER
+						</Button>
+					</View>
+				</Card>
+			</ImageOverlay>
+		</KeyboardAvoidingView>
+	);
+};
+
 const Stack = createNativeStackNavigator();
 
 function Auth() {
@@ -737,6 +858,18 @@ function ManagerScreens() {
 	);
 }
 
+const Tab = createBottomTabNavigator();
+
+function CustomerScreens() {
+	return (
+		<Tab.Navigator>
+			<Tab.Screen name='Scanner' component={QRScanner} />
+			<Tab.Screen name='ViewProducts' component={ProductListScreen} />
+			<Tab.Screen name='ViewOrders' component={ViewOrdersScreen} />
+		</Tab.Navigator>
+	)
+}
+
 export default () => (
 	<>
 		<IconRegistry icons={EvaIconsPack} />
@@ -748,8 +881,10 @@ export default () => (
 					<Stack.Screen name="CreateSupplier" component={CreateSupplierScreen} />
 					<Stack.Screen name="CreateCategory" component={CreateCategoryScreen} />
 					<Stack.Screen name="CreateProduct" component={CreateProductScreen} />
+					<Stack.Screen name='Customer' component={CustomerScreens} options={{ headerShown: false }} />
 					<Stack.Screen name="ViewProducts" component={ProductListScreen} />
 					<Stack.Screen name="ViewProduct" component={ViewProductScreen} />
+					<Stack.Screen name="CreateOrder" component={CreateOrderScreen} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</ApplicationProvider>
@@ -821,5 +956,14 @@ const styles = StyleSheet.create({
 		marginRight: 35,
 		textAlign: 'center',
 	},
+	layoutContainer: {
+		flex: 1,
+		flexDirection: 'row',
+	},
+	layout: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+	}
 });
 
