@@ -5,6 +5,7 @@ import { CartIcon } from './extra/icons';
 import { Product } from './extra/data';
 import axios from 'axios';
 import Reactotron from 'reactotron-react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const products = [
     Product.pinkChair(),
@@ -21,10 +22,17 @@ var baseUrl = "https://standtogetherforchange.org";
 
 export const ProductListScreen = ({ navigation, route }) => {
     let [products, setProducts] = React.useState([]);
+    const [userCategory, setUserCategory] = React.useState("customer");
     const styles = useStyleSheet(themedStyles);
 
     React.useEffect(() => {
         const fetchData = async () => {
+            let session = await AsyncStorage.getItem('@session');
+			session = JSON.parse(session);
+			const userCategory = session.userCategory;
+
+            setUserCategory(userCategory);
+
             const params = {
                 target: 'products',
             };
@@ -45,8 +53,6 @@ export const ProductListScreen = ({ navigation, route }) => {
     }, []);
 
     const displayProducts = products.filter(product => product.category === route.name);
-
-    const { userCategory } = route.params;
 
     const onItemPress = (item) => {
         navigation && navigation.navigate('ViewProduct', { item, userCategory });
