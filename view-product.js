@@ -23,15 +23,20 @@ const keyboardOffset = (height) => Platform.select({
 });
 
 export const ViewProductScreen = ({ navigation, route }) => {
-    const [comment, setComment] = React.useState("");
-    const [selectedColorIndex, setSelectedColorIndex] = React.useState(0);
-    const [products, setProducts] = React.useState([]);
+    const [quantity, setQuantity] = React.useState(1);
     const styles = useStyleSheet(themedStyles);
 
     const { item, userCategory } = route.params;
 
     const onBuyButtonPress = () => {
-        navigation && navigation.navigate('Payment');
+        navigation && navigation.navigate('CreateOrder', {
+            product: {
+                id: item.ProductId,
+                name: item.ProductName,
+                price: item.Price
+            },
+            quantity
+        });
     };
 
     const onAddButtonPress = () => {
@@ -105,6 +110,11 @@ export const ViewProductScreen = ({ navigation, route }) => {
                     onChange={setSelectedColorIndex}>
                     {product.colors.map(renderColorItem)}
                 </RadioGroup> */}
+                <Input
+                    placeholder='Enter Quantity'
+                    value={quantity}
+                    onChangeText={setQuantity}
+                />
                 <View style={styles.actionContainer}>
                     <Button
                         style={styles.actionButton}
