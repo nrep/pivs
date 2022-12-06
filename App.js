@@ -296,7 +296,7 @@ const SignUpScreen = ({ navigation }) => {
 	);
 };
 
-const CreateSupplierScreen = ({ navigation }) => {
+const CreateSupplierScreen = ({ navigation, route }) => {
 	const [names, setNames] = React.useState("");
 	const [phoneNumber, setPhoneNumber] = React.useState("");
 	const [email, setEmail] = React.useState("");
@@ -306,6 +306,7 @@ const CreateSupplierScreen = ({ navigation }) => {
 	const [userName, setUserName] = React.useState("");
 	const [selectedIndex, setSelectedIndex] = React.useState(new IndexPath(0));
 	const [categories, setCategories] = React.useState([]);
+	const [supplier, setSupplier] = React.useState({});
 
 	React.useEffect(() => {
 		const fetchData = async () => {
@@ -320,6 +321,26 @@ const CreateSupplierScreen = ({ navigation }) => {
 		fetchData();
 	}, []);
 
+	const { context } = route.params;
+
+	React.useEffect(() => {
+		if (context == "edit") {
+			setSupplier(route.params.supplier);
+		}
+	}, [context]);
+
+	React.useEffect(() => {
+		if (context == "edit") {
+			setNames(supplier.FullName);
+			setPhoneNumber(supplier.PhoneNumber);
+			setEmail(supplier.Email);
+			setAddress(supplier.Adress);
+			setUserName(supplier.UserName);
+			setPassword(supplier.PassWord);
+			setSelectedIndex(new IndexPath(supplier.CategoryId - 1));
+		}
+	}, [supplier]);
+
 	const onSignInButtonPress = async () => {
 		try {
 			let session = await AsyncStorage.getItem('@session');
@@ -327,7 +348,7 @@ const CreateSupplierScreen = ({ navigation }) => {
 			const managerId = session.id;
 
 			var data = {
-				target: 'create-supplier',
+				target: context == "edit" ? "update-supplier" : "create-supplier",
 				names: names,
 				phoneNumber: phoneNumber,
 				email: email,
@@ -336,6 +357,10 @@ const CreateSupplierScreen = ({ navigation }) => {
 				userName: userName,
 				category: categories[selectedIndex.row].CategoryId,
 				managerId: managerId
+			}
+
+			if (context == "edit") {
+				data.supplierId = supplier.SupplierId;
 			}
 
 			Reactotron.log(data);
@@ -453,7 +478,7 @@ const CreateSupplierScreen = ({ navigation }) => {
 					status='control'
 					size='large'
 					onPress={onSignInButtonPress}>
-					CREATE SUPPLIER
+					{context && context == "edit" ? "UPDATE SUPPLIER" : "CREATE SUPPLIER"}
 				</Button>
 			</ImageOverlay>
 		</KeyboardAvoidingView>
@@ -656,16 +681,36 @@ const CreateProductScreen = ({ navigation }) => {
 	);
 };
 
-const CreateCategoryScreen = ({ navigation }) => {
+const CreateCategoryScreen = ({ navigation, route }) => {
 	const [name, setName] = React.useState("");
 	const [description, setDescription] = React.useState("");
+	const [category, setCategory] = React.useState("");
+
+	const { context } = route.params;
+
+	React.useEffect(() => {
+		if (context == 'edit') {
+			setCategory(route.params.category);
+		}
+	}, [context]);
+
+	React.useEffect(() => {
+		if (context == 'edit') {
+			setName(category.CategoryName);
+			setDescription(category.Description);
+		}
+	}, [category]);
 
 	const onSignInButtonPress = async () => {
 		try {
 			var data = {
-				target: 'create-category',
+				target: context == 'edit' ? 'update-category' : 'create-category',
 				name,
 				description,
+			}
+
+			if (context == 'edit') {
+				data.categoryId = category.CategoryId;
 			}
 
 			const response = await axios({
@@ -721,7 +766,7 @@ const CreateCategoryScreen = ({ navigation }) => {
 					status='control'
 					size='large'
 					onPress={onSignInButtonPress}>
-					CREATE CATEGORY
+					{context == 'edit' ? 'UPDATE CATEGORY' : 'CREATE CATEGORY'}
 				</Button>
 			</ImageOverlay>
 		</KeyboardAvoidingView>
