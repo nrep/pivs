@@ -1,5 +1,5 @@
 import React from 'react';
-import { Avatar, Button, Icon, Layout, ListItem, MenuItem, OverflowMenu } from '@ui-kitten/components';
+import { Avatar, Button, ButtonGroup, Icon, Layout, ListItem, MenuItem, OverflowMenu } from '@ui-kitten/components';
 import { StyleSheet, ToastAndroid, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reactotron from 'reactotron-react-native'
@@ -7,45 +7,13 @@ import axios from 'axios';
 
 var baseUrl = "https://standtogetherforchange.org";
 
-const InstallButton = (props) => (
-    <Icon
-        style={styles.icon}
-        fill='#8F9BB3'
-        name='arrow-down-outline'
-    />
+const EditIcon = (props) => (
+    <Icon {...props} name='edit' />
 );
 
-export const OverflowMenuSimpleUsageShowcase = () => {
-
-    const [selectedIndex, setSelectedIndex] = React.useState(null);
-    const [visible, setVisible] = React.useState(false);
-
-    const onItemSelect = (index) => {
-        setSelectedIndex(index);
-        setVisible(false);
-    };
-
-    const renderToggleButton = () => (
-        <Icon
-            style={styles.icon}
-            fill='#8F9BB3'
-            name='arrow-down-outline'
-        />
-    );
-
-    return (
-        <OverflowMenu
-            anchor={renderToggleButton}
-            visible={visible}
-            selectedIndex={selectedIndex}
-            onSelect={onItemSelect}
-            onBackdropPress={() => setVisible(false)}>
-            <MenuItem title='Users' />
-            <MenuItem title='Orders' />
-            <MenuItem title='Transactions' />
-        </OverflowMenu>
-    );
-};
+const TrashIcon = (props) => (
+    <Icon {...props} name='trash' />
+);
 
 const ItemImage = (props) => (
     <Avatar
@@ -62,46 +30,75 @@ const PlusIcon = (props) => (
 export const ViewSuppliersScreen = ({ navigation }) => {
     const [suppliers, setSuppliers] = React.useState([]);
 
-    React.useEffect(() => {
-        const fetchData = async () => {
-            let session = await AsyncStorage.getItem('@session');
-            session = JSON.parse(session);
-            const managerId = session.id;
-            const params = {
-                target: 'suppliers',
-                managerId: managerId
-            };
-            try {
-                // get the data from the api
-                const response = await axios({
-                    method: 'get',
-                    url: `${baseUrl}/api.php`,
-                    params: params,
-                });
+    const fetchData = async () => {
+        let session = await AsyncStorage.getItem('@session');
+        session = JSON.parse(session);
+        const managerId = session.id;
+        const params = {
+            target: 'suppliers',
+            managerId: managerId
+        };
+        try {
+            // get the data from the api
+            const response = await axios({
+                method: 'get',
+                url: `${baseUrl}/api.php`,
+                params: params,
+            });
 
-                Reactotron.log({
-                    response, params
-                });
-                // convert the data to json
-                if (response.status === 200) {
-                    // set state with the result
-                    setSuppliers(response.data);
-                } else {
-                    // Reactotron.log(response);
-                    throw new Error("An error has occurred");
-                }
-            } catch (error) {
-                Reactotron.log({ error });
-                console.error(error);
+            Reactotron.log({
+                response, params
+            });
+            // convert the data to json
+            if (response.status === 200) {
+                // set state with the result
+                setSuppliers(response.data);
+            } else {
+                // Reactotron.log(response);
+                throw new Error("An error has occurred");
             }
+        } catch (error) {
+            Reactotron.log({ error });
+            console.error(error);
         }
+    }
 
-        // call the function
+    React.useEffect(() => {
         fetchData();
     }, []);
 
     const onNewButton = () => {
-        navigation && navigation.navigate('CreateSupplier');
+        navigation && navigation.navigate('CreateSupplier', {
+            context: 'create'
+        });
+    };
+
+    const Buttons = ({ supplier }) => {
+
+        const onEditButtonPress = () => {
+            navigation && navigation.navigate('CreateSupplier', {
+                context: 'edit',
+                supplier: supplier
+            });
+        }
+
+        const onDeleteButtonPress = () => {
+            axios.get(baseUrl + '/api.php?target=delete-supplier&id=' + supplier.SupplierId)
+                .then(function (response) {
+                    fetchData();
+                    ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+                })
+                .catch(function (error) {
+                    ToastAndroid.show('Error deleting supplier', ToastAndroid.SHORT);
+                });
+        }
+
+        return (
+            <ButtonGroup style={styles.buttonGroup} size="small">
+                <Button accessoryLeft={EditIcon} onPress={onEditButtonPress} />
+                <Button accessoryLeft={TrashIcon} status="danger" onPress={onDeleteButtonPress} />
+            </ButtonGroup>
+        )
     };
 
     return (
@@ -117,7 +114,7 @@ export const ViewSuppliersScreen = ({ navigation }) => {
                     title={`${supplier.FullName}`}
                     description={`Email: ${supplier.Email} Phone: ${supplier.PhoneNumber}`}
                     accessoryLeft={ItemImage}
-                    accessoryRight={OverflowMenuSimpleUsageShowcase}
+                    accessoryRight={() => Buttons({ supplier })}
                 />
             ))}
         </>
