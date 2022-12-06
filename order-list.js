@@ -15,48 +15,6 @@ const InstallButton = (props) => (
     />
 );
 
-export const OverflowMenuSimpleUsageShowcase = (order) => {
-    const [selectedIndex, setSelectedIndex] = React.useState(null);
-    const [visible, setVisible] = React.useState(false);
-
-    Reactotron.log({ order });
-
-    const onItemSelect = (index) => {
-        setSelectedIndex(index);
-        setVisible(false);
-    };
-
-    const renderToggleButton = () => (
-        <Icon
-            style={styles.icon}
-            fill='#8F9BB3'
-            name='arrow-down-outline'
-        />
-    );
-
-    return (
-        <View>
-            <Layout style={styles.container}>
-                <Layout style={styles.layout} level='4'>
-                    <Text category='s1'>{order.Quantity * order.Price}</Text>
-                </Layout>
-                <Layout style={styles.layout} level='3'>
-                    <OverflowMenu
-                        anchor={renderToggleButton}
-                        visible={visible}
-                        selectedIndex={selectedIndex}
-                        onSelect={onItemSelect}
-                        onBackdropPress={() => setVisible(false)}>
-                        <MenuItem title='Users' />
-                        <MenuItem title='Orders' />
-                        <MenuItem title='Transactions' />
-                    </OverflowMenu>
-                </Layout>
-            </Layout>
-        </View>
-    );
-};
-
 const ItemImage = (props) => (
     <Avatar
         {...props}
@@ -71,6 +29,46 @@ const PlusIcon = (props) => (
 
 export const ViewOrdersScreen = ({ navigation, route }) => {
     const [orders, setOrders] = React.useState([]);
+
+    const OverflowMenuSimpleUsageShowcase = (order) => {
+        const [selectedIndex, setSelectedIndex] = React.useState(null);
+        const [visible, setVisible] = React.useState(false);
+
+        const onItemSelect = (index) => {
+            setSelectedIndex(index);
+            setVisible(false);
+        };
+
+        const renderToggleButton = () => (
+            <Icon
+                style={styles.icon}
+                fill='#8F9BB3'
+                name='arrow-down-outline'
+            />
+        );
+
+        return (
+            <View>
+                <Layout style={styles.container}>
+                    <Layout style={styles.layout} level='4'>
+                        <Text category='s1'>{order.Quantity * order.Price}</Text>
+                    </Layout>
+                    <Layout style={styles.layout} level='3'>
+                        <OverflowMenu
+                            anchor={renderToggleButton}
+                            visible={visible}
+                            selectedIndex={selectedIndex}
+                            onSelect={onItemSelect}
+                            onBackdropPress={() => setVisible(false)}>
+                            <MenuItem title='Users' />
+                            <MenuItem title='Orders' />
+                            <MenuItem title='Transactions' />
+                        </OverflowMenu>
+                    </Layout>
+                </Layout>
+            </View>
+        );
+    };
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -114,24 +112,15 @@ export const ViewOrdersScreen = ({ navigation, route }) => {
         fetchData();
     }, []);
 
-    const onNewButton = () => {
-        navigation && navigation.navigate('CreateOrder');
-    };
-
     return (
         <>
-            <View>
-                <Button style={styles.button} status='primary' accessoryLeft={PlusIcon} onPress={onNewButton}>
-                    NEW
-                </Button>
-            </View>
             {Array.isArray(orders) && orders.map((order, index) => (
                 <ListItem
                     key={index}
                     title={`${order.ProductName}`}
                     description={order.Quantity}
                     accessoryLeft={ItemImage}
-                    accessoryRight={OverflowMenuSimpleUsageShowcase(order)}
+                    accessoryRight={() => OverflowMenuSimpleUsageShowcase(order)}
                 />
             ))}
         </>

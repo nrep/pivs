@@ -23,9 +23,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { ViewCategoriesScreen } from './category-list';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import ScanScreen from './qr-code-scanner';
 import QRScanner from './qr-code-scanner';
 import { ViewOrdersScreen } from './order-list';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -862,9 +862,18 @@ const Tab = createBottomTabNavigator();
 
 function CustomerScreens() {
 	return (
-		<Tab.Navigator>
+		<Tab.Navigator initialRouteName="ViewProducts">
 			<Tab.Screen name='Scanner' component={QRScanner} />
-			<Tab.Screen name='ViewProducts' component={ProductListScreen} />
+			<Tab.Screen
+				name='ViewProducts'
+				component={ProductListScreen}
+				options={{
+					tabBarLabel: 'Home',
+					tabBarIcon: ({ color, size }) => (
+						<MaterialCommunityIcons name="home" color={color} size={size} />
+					),
+				}}
+			/>
 			<Tab.Screen name='ViewOrders' component={ViewOrdersScreen} />
 		</Tab.Navigator>
 	)
