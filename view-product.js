@@ -14,6 +14,9 @@ import { KeyboardAvoidingView } from './extra/keyboard-avoiding-view.component';
 import { CommentList } from './extra/comment-list.component';
 import { Product, ProductColor } from './extra/data-1';
 import QRCode from 'react-native-qrcode-svg';
+import axios from 'axios';
+
+var baseUrl = "https://standtogetherforchange.org";
 
 const product = Product.pinkChair();
 
@@ -38,6 +41,24 @@ export const ViewProductScreen = ({ navigation, route }) => {
             quantity
         });
     };
+
+    const onEditButtonPress = () => {
+        navigation && navigation.navigate('CreateProduct', {
+            context: 'edit',
+            product: item
+        });
+    }
+
+    const onDeleteButtonPress = () => {
+        axios.get(baseUrl + '/api.php?target=delete-product&id=' + product.CategoryId)
+            .then(function (response) {
+                navigation && navigation.navigate('ViewProducts');
+                ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+            })
+            .catch(function (error) {
+                ToastAndroid.show('Error deleting product', ToastAndroid.SHORT);
+            });
+    }
 
     const onAddButtonPress = () => {
         navigation && navigation.navigate('ShoppingCart');
@@ -110,26 +131,39 @@ export const ViewProductScreen = ({ navigation, route }) => {
                     onChange={setSelectedColorIndex}>
                     {product.colors.map(renderColorItem)}
                 </RadioGroup> */}
-                <Input
-                    placeholder='Enter Quantity'
-                    value={quantity}
-                    onChangeText={setQuantity}
-                />
-                <View style={styles.actionContainer}>
-                    <Button
-                        style={styles.actionButton}
-                        size='giant'
-                        onPress={onBuyButtonPress}>
-                        BUY
-                    </Button>
-                    {/* <Button
-                        style={styles.actionButton}
-                        size='giant'
-                        status='control'
-                        onPress={onAddButtonPress}>
-                        ADD TO BAG
-                    </Button> */}
-                </View>
+                {userCategory === 'Customer' ? (
+                    <>
+                        <Input
+                            placeholder='Enter Quantity'
+                            value={quantity}
+                            onChangeText={setQuantity}
+                        />
+                        <View style={styles.actionContainer}>
+                            <Button
+                                style={styles.actionButton}
+                                size='giant'
+                                onPress={onBuyButtonPress}>
+                                BUY
+                            </Button>
+                        </View>
+                    </>
+                ) : (
+                    <View style={styles.actionContainer}>
+                        <Button
+                            style={styles.actionButton}
+                            size='giant'
+                            onPress={onEditButtonPress}>
+                            Edit
+                        </Button>
+                        <Button
+                            style={styles.actionButton}
+                            size='giant'
+                            status='danger'
+                            onPress={onDeleteButtonPress}>
+                            Delete
+                        </Button>
+                    </View>
+                )}
             </Layout>
             {/* <Input
                 style={styles.commentInput}

@@ -3,6 +3,9 @@ package com.scanner;
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.ReactRootView;
+// Add these required imports:
+import android.os.Bundle;
+import com.zoontek.rnbootsplash.RNBootSplash;
 
 public class MainActivity extends ReactActivity {
 
@@ -43,6 +46,11 @@ public class MainActivity extends ReactActivity {
       // If you opted-in for the New Architecture, we enable Concurrent Root (i.e. React 18).
       // More on this on https://reactjs.org/blog/2022/03/29/react-v18.html
       return BuildConfig.IS_NEW_ARCHITECTURE_ENABLED;
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+      // RNBootSplash.init(this); // <- initialize the splash screen
+      super.onCreate(savedInstanceState); // or super.onCreate(null) with react-native-screens
     }
   }
 }

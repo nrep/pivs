@@ -71,7 +71,6 @@ export const ViewCategoriesScreen = ({ navigation }) => {
         }
 
         const onDeleteButtonPress = () => {
-            Reactotron.log(baseUrl + '/api.php?target=delete-category&id=' + category.CategoryId);
             axios.get(baseUrl + '/api.php?target=delete-category&id=' + category.CategoryId)
                 .then(function (response) {
                     fetchData();

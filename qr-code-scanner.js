@@ -49,11 +49,7 @@ export default function QRScanner({ navigation }) {
                     frameProcessor={frameProcessor}
                     frameProcessorFps={5}
                 />
-                {barcodes.map((barcode, idx) => (
-                    <Text key={idx} style={styles.barcodeTextURL}>
-                        {barcode.displayValue}
-                    </Text>
-                ))}
+                {barcodes.map((barcode, idx) => onBarcodeDected(barcode))}
             </>
         )
     );

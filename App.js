@@ -26,6 +26,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import QRScanner from './qr-code-scanner';
 import { ViewOrdersScreen } from './order-list';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import RNBootSplash from "react-native-bootsplash";
+import { SupplierSettingsScreen } from './supplier-settings';
+import { ViewCustomersScreen } from './customer-list';
+import { CustomerSettingsScreen } from './customer-settings';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -77,7 +84,7 @@ const SignInScreen = ({ navigation }) => {
 					if (responseJson.userCategory == "manager") {
 						navigation && navigation.navigate('Manager');
 					} else if (responseJson.userCategory == "supplier") {
-						navigation && navigation.navigate('ViewProducts', { userCategory: "supplier" });
+						navigation && navigation.navigate('Supplier', { userCategory: "supplier" });
 					} else if (responseJson.userCategory == "customer") {
 						navigation && navigation.navigate('Customer', { userCategory: "customer" });
 					}
@@ -93,7 +100,9 @@ const SignInScreen = ({ navigation }) => {
 	};
 
 	const onSignUpButtonPress = () => {
-		navigation && navigation.navigate('SignUp');
+		navigation && navigation.navigate('SignUp', {
+			context: "sign-up"
+		});
 	};
 
 	return (
@@ -155,7 +164,7 @@ const SignInScreen = ({ navigation }) => {
 	);
 };
 
-const SignUpScreen = ({ navigation }) => {
+const SignUpScreen = ({ navigation, route }) => {
 	const [names, setNames] = React.useState("");
 	const [phoneNumber, setPhoneNumber] = React.useState("");
 	const [email, setEmail] = React.useState("");
@@ -163,17 +172,46 @@ const SignUpScreen = ({ navigation }) => {
 	const [location, setLocation] = React.useState("");
 	const [secureTextEntry, setSecureTextEntry] = React.useState(true);
 	const [userName, setUserName] = React.useState("");
+	const [customer, setCustomer] = React.useState({});
+	const [context, setContext] = React.useState("create");
+
+	React.useEffect(() => {
+		if (route.params?.context) {
+			setContext(route.params.context);
+		}
+	}, [route.params?.context]);
+
+	React.useEffect(() => {
+		if (context == "edit") {
+			setCustomer(route.params?.customer);
+		}
+	}, [context]);
+
+	React.useEffect(() => {
+		if (context == "edit") {
+			setNames(customer.FullName);
+			setPhoneNumber(customer.PhoneNumber);
+			setEmail(customer.Email);
+			setLocation(customer.Location);
+			setUserName(customer.UserName);
+			setPassword(customer.PassWord);
+		}
+	}, [customer])
 
 	const onSignInButtonPress = async () => {
 		try {
 			var data = {
-				target: 'sign-up',
+				target: context == "sign-up" ? 'sign-up' : 'update-customer',
 				names: names,
 				phoneNumber: phoneNumber,
 				email: email,
 				password: password,
 				location: location,
 				userName: userName,
+			}
+
+			if (context == "edit") {
+				data.customerId = customer.CustomerId
 			}
 
 			const response = await axios({
@@ -191,7 +229,13 @@ const SignUpScreen = ({ navigation }) => {
 				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
 				if (responseJson.value == 1) {
 					await storeSession(responseJson);
-					navigation && navigation.navigate('Customer', { userCategory: 'customer' });
+					if (context == "sign-up") {
+						navigation && navigation.navigate('Customer', { userCategory: 'customer' });
+					} else {
+						navigation && navigation.navigate('Customer', {
+							screen: 'Settings',
+						});
+					}
 				}
 			} else {
 				// Reactotron.log(response);
@@ -227,16 +271,18 @@ const SignUpScreen = ({ navigation }) => {
 						style={styles.signInLabel}
 						status='control'
 						category='h4'>
-						SIGN UP
+						{context == "edit" ? "EDIT PROFILE" : "SIGN UP"}
 					</Text>
-					<Button
-						style={styles.signUpButton}
-						appearance='ghost'
-						status='control'
-						size='giant'
-						onPress={onSignUpButtonPress}>
-						Sign In
-					</Button>
+					{context == "sign-up" && (
+						<Button
+							style={styles.signUpButton}
+							appearance='ghost'
+							status='control'
+							size='giant'
+							onPress={onSignUpButtonPress}>
+							Sign In
+						</Button>
+					)}
 				</View>
 				<View style={styles.formContainer}>
 					<Input
@@ -289,7 +335,7 @@ const SignUpScreen = ({ navigation }) => {
 					status='control'
 					size='large'
 					onPress={onSignInButtonPress}>
-					SIGN UP
+					{context == "edit" ? "UPDATE PROFILE" : "SIGN UP"}
 				</Button>
 			</ImageOverlay>
 		</KeyboardAvoidingView>
@@ -345,7 +391,8 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 		try {
 			let session = await AsyncStorage.getItem('@session');
 			session = JSON.parse(session);
-			const managerId = session.id;
+			const userCategory = session.userCategory;
+			const managerId = userCategory == "manager" ? session.managerId : session.data.ManagerId;
 
 			var data = {
 				target: context == "edit" ? "update-supplier" : "create-supplier",
@@ -381,7 +428,11 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 				if (responseJson.value == 1) {
 					ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
 					if (responseJson.value == 1) {
-						navigation && navigation.navigate('ViewSuppliers');
+						if (userCategory == "manager") {
+							navigation && navigation.navigate('ViewSuppliers');
+						} else {
+							navigation && navigation.navigate('Settings');
+						}
 					}
 				}
 			} else {
@@ -485,13 +536,32 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 	);
 };
 
-const CreateProductScreen = ({ navigation }) => {
+const CreateProductScreen = ({ navigation, route }) => {
 	const [names, setNames] = React.useState("");
 	const [price, setPrice] = React.useState("");
 	const [manufactureDate, setManufactureDate] = React.useState("");
 	const [expiryDate, setExpiryDate] = React.useState("");
 	const [description, setDescription] = React.useState("");
 	const [singleFile, setSingleFile] = React.useState(null);
+	const [product, setProduct] = React.useState({});
+
+	const { context } = route.params;
+
+	React.useEffect(() => {
+		if (context && context == "edit") {
+			setProduct(route.params.product);
+		}
+	}, [context]);
+
+	React.useEffect(() => {
+		if (context == "edit" && product) {
+			setNames(product.ProductName);
+			setPrice(product.Price);
+			setManufactureDate(Date.parse(product.MfgDate));
+			setExpiryDate(Date.parse(product.ExpDate));
+			setDescription(product.Description);
+		}
+	}, [product]);
 
 	const uploadImage = async () => {
 		// Check if any file is selected or not
@@ -561,13 +631,17 @@ const CreateProductScreen = ({ navigation }) => {
 			const supplierId = session.id;
 
 			var data = {
-				target: 'create-product',
+				target: context == "edit" ? 'update-product' : 'create-product',
 				name: names,
 				price: price,
 				manufactureDate: manufactureDate,
 				expiryDate: expiryDate,
 				description: description,
 				supplierId: supplierId
+			}
+
+			if (context == "edit") {
+				data.productId = product.ProductId;
 			}
 
 			Reactotron.log({ data });
@@ -674,7 +748,7 @@ const CreateProductScreen = ({ navigation }) => {
 					status='control'
 					size='large'
 					onPress={onSignInButtonPress}>
-					CREATE PRODUCT
+					{context == 'edit' ? 'UPDATE PRODUCT' : 'CREATE PRODUCT'}
 				</Button>
 			</ImageOverlay>
 		</KeyboardAvoidingView>
@@ -887,8 +961,17 @@ const Stack = createNativeStackNavigator();
 function Auth() {
 	return (
 		<Stack.Navigator>
-			<Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
-			<Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+			<Stack.Screen name="SignIn" component={SignInScreen} options={{
+				headerShown: false,
+				title: 'Sign In'
+			}} />
+			<Stack.Screen name="SignUp"
+				component={SignUpScreen}
+				options={({ route }) => ({
+					title: route.params?.context && route.params.context == "sign-up" ? "Create Account" : "Update Profile",
+					headerShown: route.params?.context && route.params.context == "sign-up" ? false : true
+				})}
+			/>
 		</Stack.Navigator>
 	)
 }
@@ -897,8 +980,27 @@ const Drawer = createDrawerNavigator();
 function ManagerScreens() {
 	return (
 		<Drawer.Navigator>
-			<Drawer.Screen name='ViewSuppliers' component={ViewSuppliersScreen} />
-			<Drawer.Screen name="ViewCategories" component={ViewCategoriesScreen} />
+			<Drawer.Screen
+				name='ViewSuppliers'
+				component={ViewSuppliersScreen}
+				options={{
+					title: 'Suppliers',
+				}}
+			/>
+			<Drawer.Screen
+				name="ViewCategories"
+				component={ViewCategoriesScreen}
+				options={{
+					title: 'Categories',
+				}}
+			/>
+			<Drawer.Screen
+				name="ViewCustomers"
+				component={ViewCustomersScreen}
+				options={{
+					title: 'Customers',
+				}}
+			/>
 		</Drawer.Navigator>
 	);
 }
@@ -913,14 +1015,65 @@ function CustomerScreens() {
 				name='ViewProducts'
 				component={ProductListScreen}
 				options={{
-					tabBarLabel: 'Home',
+					title: 'Products',
+					tabBarIcon: ({ color, size }) => (
+						<MaterialCommunityIcons name="home" color={color} size={26} />
+					),
+				}}
+			/>
+			<Tab.Screen
+				name='ViewOrders'
+				component={ViewOrdersScreen}
+				options={{
+					title: 'Orders',
+					tabBarIcon: ({ color, size }) => (
+						<Icon name="home" color={color} size={26} />
+					),
+				}}
+			/>
+			<Tab.Screen
+				name='Settings'
+				component={CustomerSettingsScreen}
+				options={{
+					tabBarIcon: ({ color, size }) => (
+						<MaterialIcons name="settings" color={color} size={26} />
+					),
+				}}
+			/>
+		</Tab.Navigator>
+	)
+}
+
+const SettingsIcon = (props) => (
+	<Icon {...props} name='settings' />
+)
+
+const SuppplierTab = createBottomTabNavigator();
+
+function SupplierScreens() {
+	return (
+		<SuppplierTab.Navigator initialRouteName="ViewProducts">
+			<SuppplierTab.Screen
+				name='ViewProducts'
+				component={ProductListScreen}
+				options={{
+					title: 'Products',
 					tabBarIcon: ({ color, size }) => (
 						<MaterialCommunityIcons name="home" color={color} size={size} />
 					),
 				}}
 			/>
-			<Tab.Screen name='ViewOrders' component={ViewOrdersScreen} />
-		</Tab.Navigator>
+			<SuppplierTab.Screen name='ViewOrders' component={ViewOrdersScreen} />
+			<SuppplierTab.Screen
+				name='Settings'
+				component={SupplierSettingsScreen}
+				options={{
+					tabBarIcon: ({ color, size }) => (
+						<SettingsIcon color={color} size={size} />
+					),
+				}}
+			/>
+		</SuppplierTab.Navigator>
 	)
 }
 
@@ -932,13 +1085,43 @@ export default () => (
 				<Stack.Navigator>
 					<Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
 					<Stack.Screen name="Manager" component={ManagerScreens} options={{ headerShown: false }} />
-					<Stack.Screen name="CreateSupplier" component={CreateSupplierScreen} />
-					<Stack.Screen name="CreateCategory" component={CreateCategoryScreen} />
-					<Stack.Screen name="CreateProduct" component={CreateProductScreen} />
+					<Stack.Screen
+						name="CreateSupplier"
+						component={CreateSupplierScreen}
+						options={({ route }) => ({
+							title: route.params?.context && route.params.context == "create" ? "Create Supplier" : "Update Supplier",
+						})}
+					/>
+					<Stack.Screen
+						name="CreateCategory"
+						component={CreateCategoryScreen}
+						options={({ route }) => ({
+							title: route.params?.context && route.params.context == "create" ? "Create Category" : "Update Category",
+						})}
+					/>
+					<Stack.Screen name="Supplier" component={SupplierScreens} options={{ headerShown: false }} />
 					<Stack.Screen name='Customer' component={CustomerScreens} options={{ headerShown: false }} />
-					<Stack.Screen name="ViewProducts" component={ProductListScreen} />
-					<Stack.Screen name="ViewProduct" component={ViewProductScreen} />
-					<Stack.Screen name="CreateOrder" component={CreateOrderScreen} />
+					<Stack.Screen
+						name="ViewProduct"
+						component={ViewProductScreen}
+						options={({ route }) => ({
+							title: route.params?.product && route.params.product.name,
+						})}
+					/>
+					<Stack.Screen
+						name="CreateOrder"
+						component={CreateOrderScreen}
+						options={({ route }) => ({
+							title: route.params?.context && route.params.context == "create" ? "Create Order" : "Update Order",
+						})}
+					/>
+					<Stack.Screen
+						name="CreateProduct"
+						component={CreateProductScreen}
+						options={({ route }) => ({
+							title: route.params?.context && route.params.context == "create" ? "Create Product" : "Update Product",
+						})}
+					/>
 				</Stack.Navigator>
 			</NavigationContainer>
 		</ApplicationProvider>
