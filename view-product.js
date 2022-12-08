@@ -131,7 +131,7 @@ export const ViewProductScreen = ({ navigation, route }) => {
                     onChange={setSelectedColorIndex}>
                     {product.colors.map(renderColorItem)}
                 </RadioGroup> */}
-                {userCategory === 'Customer' ? (
+                {userCategory === 'customer' ? (
                     <>
                         <Input
                             placeholder='Enter Quantity'
@@ -143,7 +143,7 @@ export const ViewProductScreen = ({ navigation, route }) => {
                                 style={styles.actionButton}
                                 size='giant'
                                 onPress={onBuyButtonPress}>
-                                BUY
+                                PLACE ORDER
                             </Button>
                         </View>
                     </>

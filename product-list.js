@@ -28,8 +28,8 @@ export const ProductListScreen = ({ navigation, route }) => {
     React.useEffect(() => {
         const fetchData = async () => {
             let session = await AsyncStorage.getItem('@session');
-			session = JSON.parse(session);
-			const userCategory = session.userCategory;
+            session = JSON.parse(session);
+            const userCategory = session.userCategory;
 
             setUserCategory(userCategory);
 
@@ -63,7 +63,7 @@ export const ProductListScreen = ({ navigation, route }) => {
     };
 
     const renderItemFooter = (info) => {
-        Reactotron.log({info});
+        Reactotron.log({ info });
         return (
             <View style={styles.itemFooter}>
                 <Text category='s1'>
@@ -82,7 +82,7 @@ export const ProductListScreen = ({ navigation, route }) => {
     const renderItemHeader = (info) => (
         <ImageBackground
             style={styles.itemHeader}
-            source={require('./assets/image-product-3.jpg')}
+            source={info.item.ImagePath ? { uri: baseUrl + '/' + info.item.ImagePath } : require('./assets/image-product-3.jpg')}
         />
     );
 

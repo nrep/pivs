@@ -4,18 +4,17 @@ if (__DEV__) {
 
 import React from 'react';
 import * as eva from '@eva-design/eva';
-import { ApplicationProvider, Button, Card, Datepicker, Icon, IconRegistry, Input, Layout, Select, SelectItem, Text } from '@ui-kitten/components';
+import { ApplicationProvider, Button, Card, Datepicker, Icon, IconRegistry, Input, Layout, Select, SelectItem, Spinner, Text } from '@ui-kitten/components';
 import { ViewProductScreen } from './view-product';
 import { KeyboardAvoidingView } from './extra/3rd-party';
 import { ImageOverlay } from './extra/image-overlay.component';
-import { StyleSheet, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { IndexPath, TouchableWithoutFeedback } from '@ui-kitten/components/devsupport';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { ViewSuppliersScreen } from './ViewSuppliers';
 import { EvaIconsPack } from '@ui-kitten/eva-icons';
 import { ProductListScreen } from './product-list';
-// import { EvaIconsPack } from '@ui-kitten/eva-icons';
 import DocumentPicker from 'react-native-document-picker';
 import Reactotron from 'reactotron-react-native'
 import axios from 'axios';
@@ -31,8 +30,9 @@ import RNBootSplash from "react-native-bootsplash";
 import { SupplierSettingsScreen } from './supplier-settings';
 import { ViewCustomersScreen } from './customer-list';
 import { CustomerSettingsScreen } from './customer-settings';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { OrderDetailsScreen } from './view-order';
+import { ManagerSettingsScreen } from './manager-settings';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -52,13 +52,34 @@ const storeSession = async (data) => {
 	}
 };
 
+const LoadingIndicator = (props) => (
+	<View style={[props.style, styles.indicator]}>
+		<Spinner size='small' />
+	</View>
+);
+
 const SignInScreen = ({ navigation }) => {
 	const [email, setEmail] = React.useState("");
 	const [password, setPassword] = React.useState("");
 	const [selectedIndex, setSelectedIndex] = React.useState(new IndexPath(0));
+	const [isLoading, setIsLoading] = React.useState(false);
+
+	const userCategories = [
+		'Manager',
+		'Supplier',
+		'Customer'
+	]
+
+	const displayValue = userCategories[selectedIndex.row];
+
+	const renderOption = (title, key) => (
+		<SelectItem title={title} key={key} />
+	);
+
 
 	const onSignInButtonPress = async () => {
 		try {
+			setIsLoading(true);
 			var data = {
 				target: 'sign-in',
 				email: email,
@@ -81,6 +102,7 @@ const SignInScreen = ({ navigation }) => {
 				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
 				if (responseJson.value == 1) {
 					await storeSession(responseJson);
+					setIsLoading(false);
 					if (responseJson.userCategory == "manager") {
 						navigation && navigation.navigate('Manager');
 					} else if (responseJson.userCategory == "supplier") {
@@ -89,11 +111,14 @@ const SignInScreen = ({ navigation }) => {
 						navigation && navigation.navigate('Customer', { userCategory: "customer" });
 					}
 				}
+				setIsLoading(false);
 			} else {
 				// Reactotron.log(response);
+				setIsLoading(false);
 				throw new Error("An error has occurred");
 			}
 		} catch (error) {
+			setIsLoading(false);
 			Reactotron.log({ error });
 			console.error(error);
 		}
@@ -147,16 +172,19 @@ const SignInScreen = ({ navigation }) => {
 						label={"Category"}
 						selectedIndex={selectedIndex}
 						onSelect={index => setSelectedIndex(index)}
-						style={styles.passwordInput}>
-						<SelectItem title='Manager' value='Manager' />
-						<SelectItem title='Supplier' value='Supplier' />
-						<SelectItem title='Customer' value='Customer' />
+						style={styles.passwordInput}
+						placeholder="Manager"
+						status='control'
+						value={displayValue}>
+						{userCategories.map(renderOption)}
 					</Select>
 				</View>
 				<Button
 					status='control'
 					size='large'
-					onPress={onSignInButtonPress}>
+					onPress={onSignInButtonPress}
+					disabled={isLoading}
+					accessoryLeft={() => isLoading && <LoadingIndicator />}>
 					SIGN IN
 				</Button>
 			</ImageOverlay>
@@ -542,8 +570,9 @@ const CreateProductScreen = ({ navigation, route }) => {
 	const [manufactureDate, setManufactureDate] = React.useState("");
 	const [expiryDate, setExpiryDate] = React.useState("");
 	const [description, setDescription] = React.useState("");
-	const [singleFile, setSingleFile] = React.useState(null);
 	const [product, setProduct] = React.useState({});
+	const [photo, setPhoto] = React.useState(null);
+	const [isLoading, setIsLoading] = React.useState(false);
 
 	const { context } = route.params;
 
@@ -563,68 +592,51 @@ const CreateProductScreen = ({ navigation, route }) => {
 		}
 	}, [product]);
 
-	const uploadImage = async () => {
-		// Check if any file is selected or not
-		if (singleFile != null) {
-			// If file selected then create FormData
-			const fileToUpload = singleFile;
-			const data = new FormData();
-			data.append('name', 'Image Upload');
-			data.append('file_attachment', fileToUpload);
-			// Please change file upload URL
-			let res = await fetch(
-				'http://localhost/upload.php',
-				{
-					method: 'post',
-					body: data,
-					headers: {
-						'Content-Type': 'multipart/form-data; ',
-					},
-				}
-			);
-			let responseJson = await res.json();
-			if (responseJson.status == 1) {
-				ToastAndroid.show('Upload Successful', ToastAndroid.SHORT);
-				navigation && navigation.navigate('ViewProducts', { userCategory: 'supplier' });
-			}
-		} else {
-			// If no file selected the show alert
-			ToastAndroid.show('Please Select File first', ToastAndroid.SHORT);
-		}
+	const createFormData = (photo, body = {}) => {
+		Reactotron.log({ photo })
+		const data = new FormData();
+
+		data.append('photo', {
+			name: photo.assets[0].fileName,
+			type: photo.assets[0].type,
+			uri: Platform.OS === 'ios' ? photo.assets[0].uri.replace('file://', '') : photo.assets[0].uri,
+		});
+
+		Object.keys(body).forEach((key) => {
+			data.append(key, body[key]);
+		});
+
+		return data;
 	};
 
-	const selectFile = async () => {
-		// Opening Document Picker to select one file
-		try {
-			const res = await DocumentPicker.pick({
-				// Provide which type of file you want user to pick
-				type: [DocumentPicker.types.images],
-				// There can me more options as well
-				// DocumentPicker.types.allFiles
-				// DocumentPicker.types.images
-				// DocumentPicker.types.plainText
-				// DocumentPicker.types.audio
-				// DocumentPicker.types.pdf
-			});
-			// Printing the log realted to the file
-			console.log('res : ' + JSON.stringify(res));
-			// Setting the state to show single file attributes
-			setSingleFile(res);
-		} catch (err) {
-			setSingleFile(null);
-			// Handling any exception (If any)
-			if (DocumentPicker.isCancel(err)) {
-				// If user canceled the document selection
-				alert('Canceled');
-			} else {
-				// For Unknown Error
-				alert('Unknown Error: ' + JSON.stringify(err));
-				throw err;
+	const handleChoosePhoto = () => {
+		launchImageLibrary({ noData: true }, (response) => {
+			Reactotron.log({ response })
+			if (response) {
+				setPhoto(response);
 			}
+		});
+	};
+
+	const handleUploadPhoto = async (productId) => {
+		const client = axios.create({
+			baseURL: baseUrl
+		});
+		const headers = {
+			'Content-Type': 'multipart/form-data'
+		}
+		const data = createFormData(photo, { productId: productId });
+		let res = await client.post('/upload.php', data, {
+			headers: headers
+		});
+		if (res.status === 200) {
+			ToastAndroid.show('Upload Successful', ToastAndroid.SHORT);
+			navigation && navigation.navigate('ViewProducts', { userCategory: 'supplier' });
 		}
 	};
 
 	const onSignInButtonPress = async () => {
+		setIsLoading(true);
 		try {
 			let session = await AsyncStorage.getItem('@session');
 			session = JSON.parse(session);
@@ -661,15 +673,17 @@ const CreateProductScreen = ({ navigation, route }) => {
 				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
 				if (responseJson.value == 1) {
 					ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
-					if (responseJson.value == 1) {
-						await uploadImage();
-					}
+					await handleUploadPhoto(responseJson.id);
+					setIsLoading(false);
 				}
+				setIsLoading(false);
 			} else {
+				setIsLoading(false);
 				// Reactotron.log(response);
 				throw new Error("An error has occurred");
 			}
 		} catch (error) {
+			setIsLoading(false);
 			Reactotron.log({ error });
 			console.error(error);
 		}
@@ -724,30 +738,17 @@ const CreateProductScreen = ({ navigation, route }) => {
 						value={price}
 						onChangeText={setPrice}
 					/>
-					{singleFile != null && (
-						<Text style={styles.textStyle}>
-							File Name: {singleFile.name ? singleFile.name : ''}
-							{'\n'}
-							Type: {singleFile.type ? singleFile.type : ''}
-							{'\n'}
-							File Size: {singleFile.size ? singleFile.size : ''}
-							{'\n'}
-							URI: {singleFile.uri ? singleFile.uri : ''}
-							{'\n'}
-						</Text>
-					)}
-					<TouchableOpacity
-						style={styles.buttonStyle}
-						activeOpacity={0.5}
-						onPress={selectFile}>
-						<Text style={styles.buttonTextStyle}>Select File</Text>
-					</TouchableOpacity>
+					<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+						<Button title="Choose Photo" onPress={handleChoosePhoto}>Choose Photo</Button>
+					</View>
 				</View>
 				<Button
 					style={styles.passwordInput}
 					status='control'
 					size='large'
-					onPress={onSignInButtonPress}>
+					onPress={onSignInButtonPress}
+					disabled={isLoading}
+					accessoryLeft={() => isLoading && <LoadingIndicator />}>
 					{context == 'edit' ? 'UPDATE PRODUCT' : 'CREATE PRODUCT'}
 				</Button>
 			</ImageOverlay>
@@ -944,10 +945,9 @@ const CreateOrderScreen = ({ navigation, route }) => {
 							</Layout>
 						</Layout>
 						<Button
-							status='control'
 							size='large'
 							onPress={onSignInButtonPress}>
-							CREATE ORDER
+							PLACE ORDER
 						</Button>
 					</View>
 				</Card>
@@ -1000,6 +1000,10 @@ function ManagerScreens() {
 				options={{
 					title: 'Customers',
 				}}
+			/>
+			<Drawer.Screen
+				name="Settings"
+				component={ManagerSettingsScreen}
 			/>
 		</Drawer.Navigator>
 	);
@@ -1063,7 +1067,13 @@ function SupplierScreens() {
 					),
 				}}
 			/>
-			<SuppplierTab.Screen name='ViewOrders' component={ViewOrdersScreen} />
+			<SuppplierTab.Screen
+				name='ViewOrders'
+				component={ViewOrdersScreen}
+				options={{
+					title: 'Orders'
+				}}
+			/>
 			<SuppplierTab.Screen
 				name='Settings'
 				component={SupplierSettingsScreen}
@@ -1082,7 +1092,17 @@ export default () => (
 		<IconRegistry icons={EvaIconsPack} />
 		<ApplicationProvider {...eva} theme={eva.light}>
 			<NavigationContainer>
-				<Stack.Navigator>
+				<Stack.Navigator
+					screenOptions={{
+						headerStyle: {
+							backgroundColor: '#00acc1',
+						},
+						headerTintColor: '#fff',
+						headerTitleStyle: {
+							fontWeight: 'bold',
+						},
+					}}
+				>
 					<Stack.Screen name="Auth" component={Auth} options={{ headerShown: false }} />
 					<Stack.Screen name="Manager" component={ManagerScreens} options={{ headerShown: false }} />
 					<Stack.Screen
@@ -1121,6 +1141,11 @@ export default () => (
 						options={({ route }) => ({
 							title: route.params?.context && route.params.context == "create" ? "Create Product" : "Update Product",
 						})}
+					/>
+					<Stack.Screen
+						name="OrderDetails"
+						component={OrderDetailsScreen}
+						options={{ title: "Order Details" }}
 					/>
 				</Stack.Navigator>
 			</NavigationContainer>
@@ -1201,6 +1226,10 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-	}
+	},
+	indicator: {
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
 });
 

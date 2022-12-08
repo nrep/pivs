@@ -15,67 +15,24 @@ const InstallButton = (props) => (
     />
 );
 
-const ItemImage = (props) => (
+const ItemImage = (props, order) => (
     <Avatar
         {...props}
         style={[props.style, { tintColor: null }]}
-        source={require('./assets/image-background.jpg')}
+        source={order.ImagePath ? { uri: baseUrl + '/' + order.ImagePath } : require('./assets/image-background.jpg')}
     />
 );
 
-const PlusIcon = (props) => (
-    <Icon {...props} name='plus' />
-)
-
 export const ViewOrdersScreen = ({ navigation, route }) => {
     const [orders, setOrders] = React.useState([]);
-
-    const OverflowMenuSimpleUsageShowcase = (order) => {
-        const [selectedIndex, setSelectedIndex] = React.useState(null);
-        const [visible, setVisible] = React.useState(false);
-
-        const onItemSelect = (index) => {
-            setSelectedIndex(index);
-            setVisible(false);
-        };
-
-        const renderToggleButton = () => (
-            <Icon
-                style={styles.icon}
-                fill='#8F9BB3'
-                name='arrow-down-outline'
-            />
-        );
-
-        return (
-            <View>
-                <Layout style={styles.container}>
-                    <Layout style={styles.layout} level='4'>
-                        <Text category='s1'>{order.Quantity * order.Price}</Text>
-                    </Layout>
-                    <Layout style={styles.layout} level='3'>
-                        <OverflowMenu
-                            anchor={renderToggleButton}
-                            visible={visible}
-                            selectedIndex={selectedIndex}
-                            onSelect={onItemSelect}
-                            onBackdropPress={() => setVisible(false)}>
-                            <MenuItem title='Users' />
-                            <MenuItem title='Orders' />
-                            <MenuItem title='Transactions' />
-                        </OverflowMenu>
-                    </Layout>
-                </Layout>
-            </View>
-        );
-    };
+    const [userCategory, setUserCategory] = React.useState("customer");
 
     React.useEffect(() => {
         const fetchData = async () => {
             let session = await AsyncStorage.getItem('@session');
             session = JSON.parse(session);
             const id = session.id;
-            const userCategory = session.userCategory;
+            setUserCategory(session.userCategory);
 
             const params = {
                 target: 'orders',
@@ -119,8 +76,9 @@ export const ViewOrdersScreen = ({ navigation, route }) => {
                     key={index}
                     title={`${order.ProductName}`}
                     description={order.Quantity}
-                    accessoryLeft={ItemImage}
-                    accessoryRight={() => OverflowMenuSimpleUsageShowcase(order)}
+                    accessoryLeft={(props) => ItemImage(props, order)}
+                    accessoryRight={() => <Text category='s1'>RWF {order.Quantity * order.Price}</Text>}
+                    onPress={() => navigation.navigate('OrderDetails', { order, userCategory })}
                 />
             ))}
         </>
