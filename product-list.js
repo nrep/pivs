@@ -108,7 +108,9 @@ export const ProductListScreen = ({ navigation, route }) => {
     )
 
     const onNewButton = () => {
-        navigation && navigation.navigate('CreateProduct');
+        navigation && navigation.navigate('CreateProduct', {
+            context: 'create',
+        });
     };
 
     return (

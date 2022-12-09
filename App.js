@@ -419,8 +419,9 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 		try {
 			let session = await AsyncStorage.getItem('@session');
 			session = JSON.parse(session);
+			Reactotron.log(session)
 			const userCategory = session.userCategory;
-			const managerId = userCategory == "manager" ? session.managerId : session.data.ManagerId;
+			const managerId = userCategory == "manager" ? session.id : session.data.ManagerId;
 
 			var data = {
 				target: context == "edit" ? "update-supplier" : "create-supplier",
