@@ -16,7 +16,7 @@ import { ViewSuppliersScreen } from './ViewSuppliers';
 import { EvaIconsPack } from '@ui-kitten/eva-icons';
 import { ProductListScreen } from './product-list';
 import DocumentPicker from 'react-native-document-picker';
-import Reactotron from 'reactotron-react-native'
+import Reactotron from 'reactotron-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -193,15 +193,20 @@ const SignInScreen = ({ navigation }) => {
 };
 
 const SignUpScreen = ({ navigation, route }) => {
-	const [names, setNames] = React.useState("");
-	const [phoneNumber, setPhoneNumber] = React.useState("");
-	const [email, setEmail] = React.useState("");
-	const [password, setPassword] = React.useState("");
-	const [location, setLocation] = React.useState("");
+	const [names, setNames] = React.useState(null);
+	const [phoneNumber, setPhoneNumber] = React.useState(null);
+	const [email, setEmail] = React.useState(null);
+	const [password, setPassword] = React.useState(null);
+	const [location, setLocation] = React.useState(null);
 	const [secureTextEntry, setSecureTextEntry] = React.useState(true);
-	const [userName, setUserName] = React.useState("");
+	const [userName, setUserName] = React.useState(null);
 	const [customer, setCustomer] = React.useState({});
 	const [context, setContext] = React.useState("create");
+	const [isLoading, setIsLoading] = React.useState(false);
+
+	const isEnabled = () => {
+		return (names !== null && phoneNumber !== null && email !== null && password !== null && location !== null && userName !== null);
+	}
 
 	React.useEffect(() => {
 		if (route.params?.context) {
@@ -227,6 +232,7 @@ const SignUpScreen = ({ navigation, route }) => {
 	}, [customer])
 
 	const onSignInButtonPress = async () => {
+		setIsLoading(true);
 		try {
 			var data = {
 				target: context == "sign-up" ? 'sign-up' : 'update-customer',
@@ -253,12 +259,13 @@ const SignUpScreen = ({ navigation, route }) => {
 			});
 
 			if (response.status === 200) {
+				setIsLoading(false);
 				let responseJson = response.data;
 				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
 				if (responseJson.value == 1) {
 					await storeSession(responseJson);
 					if (context == "sign-up") {
-						navigation && navigation.navigate('Customer', { userCategory: 'customer' });
+						navigation && navigation.navigate('SignIn');
 					} else {
 						navigation && navigation.navigate('Customer', {
 							screen: 'Settings',
@@ -266,10 +273,12 @@ const SignUpScreen = ({ navigation, route }) => {
 					}
 				}
 			} else {
+				setIsLoading(false);
 				// Reactotron.log(response);
 				throw new Error("An error has occurred");
 			}
 		} catch (error) {
+			setIsLoading(false);
 			Reactotron.log({ error });
 			console.error(error);
 		}
@@ -362,7 +371,9 @@ const SignUpScreen = ({ navigation, route }) => {
 				<Button
 					status='control'
 					size='large'
-					onPress={onSignInButtonPress}>
+					onPress={onSignInButtonPress}
+					disabled={!isEnabled || isLoading}
+					accessoryLeft={() => isLoading && <LoadingIndicator />}>
 					{context == "edit" ? "UPDATE PROFILE" : "SIGN UP"}
 				</Button>
 			</ImageOverlay>
@@ -381,6 +392,7 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(new IndexPath(0));
 	const [categories, setCategories] = React.useState([]);
 	const [supplier, setSupplier] = React.useState({});
+	const [isLoading, setIsLoading] = React.useState(false);
 
 	React.useEffect(() => {
 		const fetchData = async () => {
@@ -416,6 +428,7 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 	}, [supplier]);
 
 	const onSignInButtonPress = async () => {
+		setIsLoading(true);
 		try {
 			let session = await AsyncStorage.getItem('@session');
 			session = JSON.parse(session);
@@ -451,6 +464,8 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 				response, data
 			});
 
+			setIsLoading(false);
+
 			if (response.status === 200) {
 				let responseJson = response.data;
 				ToastAndroid.show(responseJson.message, ToastAndroid.SHORT);
@@ -469,6 +484,7 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 				throw new Error("An error has occurred");
 			}
 		} catch (error) {
+			setIsLoading(false);
 			Reactotron.log({ error });
 			console.error(error);
 		}
@@ -557,7 +573,9 @@ const CreateSupplierScreen = ({ navigation, route }) => {
 					style={styles.passwordInput}
 					status='control'
 					size='large'
-					onPress={onSignInButtonPress}>
+					onPress={onSignInButtonPress}
+					disabled={isLoading}
+					accessoryLeft={() => isLoading && <LoadingIndicator />}>
 					{context && context == "edit" ? "UPDATE SUPPLIER" : "CREATE SUPPLIER"}
 				</Button>
 			</ImageOverlay>
@@ -574,6 +592,7 @@ const CreateProductScreen = ({ navigation, route }) => {
 	const [product, setProduct] = React.useState({});
 	const [photo, setPhoto] = React.useState(null);
 	const [isLoading, setIsLoading] = React.useState(false);
+	const [quantity, setQuantity] = React.useState(1);
 
 	const { context } = route.params;
 
@@ -650,7 +669,8 @@ const CreateProductScreen = ({ navigation, route }) => {
 				manufactureDate: manufactureDate,
 				expiryDate: expiryDate,
 				description: description,
-				supplierId: supplierId
+				supplierId: supplierId,
+				quantity
 			}
 
 			if (context == "edit") {
@@ -733,6 +753,15 @@ const CreateProductScreen = ({ navigation, route }) => {
 						numberOfLines={4}
 					/>
 					<Input
+						label='QUANTITY'
+						placeholder='Quantity'
+						status='control'
+						value={quantity}
+						onChangeText={setQuantity}
+						multiline={true}
+						numberOfLines={4}
+					/>
+					<Input
 						label='PRICE'
 						placeholder='Price'
 						status='control'
@@ -761,6 +790,7 @@ const CreateCategoryScreen = ({ navigation, route }) => {
 	const [name, setName] = React.useState("");
 	const [description, setDescription] = React.useState("");
 	const [category, setCategory] = React.useState("");
+	const [isLoading, setIsLoading] = React.useState(false);
 
 	const { context } = route.params;
 
@@ -841,7 +871,9 @@ const CreateCategoryScreen = ({ navigation, route }) => {
 				<Button
 					status='control'
 					size='large'
-					onPress={onSignInButtonPress}>
+					onPress={onSignInButtonPress}
+					disabled={isLoading}
+					accessoryLeft={() => isLoading && <LoadingIndicator />}>
 					{context == 'edit' ? 'UPDATE CATEGORY' : 'CREATE CATEGORY'}
 				</Button>
 			</ImageOverlay>
@@ -852,8 +884,14 @@ const CreateCategoryScreen = ({ navigation, route }) => {
 const CreateOrderScreen = ({ navigation, route }) => {
 	const [quantity, setQuantity] = React.useState(1);
 	const [totalPrice, setTotalPrice] = React.useState(0);
+	const [isLoading, setIsLoading] = React.useState(false);
+	const [phoneNumber, setPhoneNumber] = React.useState("");
 
 	const { product } = route.params;
+
+	React.useEffect(() => {
+		setQuantity(route.params?.quantity);
+	}, [route.params?.quantity])
 
 	React.useEffect(() => {
 		setTotalPrice(quantity * product.price);
@@ -867,13 +905,17 @@ const CreateOrderScreen = ({ navigation, route }) => {
 		try {
 			let session = await AsyncStorage.getItem('@session');
 			session = JSON.parse(session);
+
 			const customerId = session.id;
+			setPhoneNumber(session.data.PhoneNumber);
 
 			var data = {
 				target: 'create-order',
 				customerId,
 				productId: product.id,
-				quantity
+				quantity,
+				phone: phoneNumber,
+				totalPrice,
 			}
 
 			const response = await axios({
@@ -908,8 +950,8 @@ const CreateOrderScreen = ({ navigation, route }) => {
 				style={styles.container}
 				source={require('./assets/880687.jpg')}>
 				<Card>
-					<View style={styles.formContainer}>
-						<Layout style={styles.layoutContainer}>
+					<View style={[styles.formContainer, styles.passwordInput]}>
+						<Layout style={[styles.layoutContainer, styles.passwordInput]}>
 							<Layout style={styles.layout} level='4'>
 								<Text category='s1'>Product Name:</Text>
 							</Layout>
@@ -917,7 +959,7 @@ const CreateOrderScreen = ({ navigation, route }) => {
 								<Text>{product.name}</Text>
 							</Layout>
 						</Layout>
-						<Layout style={styles.layoutContainer}>
+						<Layout style={[styles.layoutContainer, styles.passwordInput]}>
 							<Layout style={styles.layout} level='4'>
 								<Text category='s1'>Unit Price:</Text>
 							</Layout>
@@ -925,7 +967,19 @@ const CreateOrderScreen = ({ navigation, route }) => {
 								<Text>{product.price}</Text>
 							</Layout>
 						</Layout>
-						<Layout style={styles.layoutContainer}>
+						<Layout style={[styles.layoutContainer, styles.passwordInput]}>
+							<Layout style={styles.layout} level='4'>
+								<Text category='s1'>Payment Phone Number:</Text>
+							</Layout>
+							<Layout style={styles.layout} level='3'>
+								<Input
+									placeholder='Enter Quantity'
+									value={phoneNumber}
+									onChangeText={setPhoneNumber}
+								/>
+							</Layout>
+						</Layout>
+						<Layout style={[styles.layoutContainer, styles.passwordInput]}>
 							<Layout style={styles.layout} level='4'>
 								<Text category='s1'>Quantity:</Text>
 							</Layout>
@@ -937,7 +991,7 @@ const CreateOrderScreen = ({ navigation, route }) => {
 								/>
 							</Layout>
 						</Layout>
-						<Layout style={styles.layoutContainer}>
+						<Layout style={[styles.layoutContainer, styles.passwordInput]}>
 							<Layout style={styles.layout} level='4'>
 								<Text category='s1'>Total Price:</Text>
 							</Layout>
@@ -947,6 +1001,8 @@ const CreateOrderScreen = ({ navigation, route }) => {
 						</Layout>
 						<Button
 							size='large'
+							disabled={isLoading}
+							accessoryLeft={() => isLoading && <LoadingIndicator />}
 							onPress={onSignInButtonPress}>
 							PLACE ORDER
 						</Button>

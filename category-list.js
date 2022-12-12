@@ -4,6 +4,7 @@ import { StyleSheet, ToastAndroid, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reactotron from 'reactotron-react-native'
 import axios from 'axios';
+import { ScrollView } from 'react-native-gesture-handler';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -96,13 +97,15 @@ export const ViewCategoriesScreen = ({ navigation }) => {
                     NEW
                 </Button>
             </View>
-            {Array.isArray(categories) && categories.map((category, index) => (
-                <ListItem
-                    key={index}
-                    title={`${category.CategoryName}`}
-                    accessoryRight={() => <Buttons category={category} />}
-                />
-            ))}
+            <ScrollView>
+                {Array.isArray(categories) && categories.map((category, index) => (
+                    <ListItem
+                        key={index}
+                        title={`${category.CategoryName}`}
+                        accessoryRight={() => <Buttons category={category} />}
+                    />
+                ))}
+            </ScrollView>
         </>
     );
 }

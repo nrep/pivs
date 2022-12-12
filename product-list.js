@@ -22,19 +22,21 @@ var baseUrl = "https://standtogetherforchange.org";
 
 export const ProductListScreen = ({ navigation, route }) => {
     let [products, setProducts] = React.useState([]);
-    const [userCategory, setUserCategory] = React.useState("customer");
+    const [userCategory, setUserCategory] = React.useState("");
     const styles = useStyleSheet(themedStyles);
 
     React.useEffect(() => {
         const fetchData = async () => {
             let session = await AsyncStorage.getItem('@session');
             session = JSON.parse(session);
-            const userCategory = session.userCategory;
+            const id = session.id;
 
-            setUserCategory(userCategory);
+            setUserCategory(session.userCategory);
 
             const params = {
                 target: 'products',
+                userCategory: session.userCategory,
+                id
             };
             try {
                 // get the data from the api

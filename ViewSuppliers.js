@@ -4,6 +4,7 @@ import { StyleSheet, ToastAndroid, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reactotron from 'reactotron-react-native'
 import axios from 'axios';
+import { ScrollView } from 'react-native-gesture-handler';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -108,15 +109,17 @@ export const ViewSuppliersScreen = ({ navigation }) => {
                     NEW
                 </Button>
             </View>
-            {Array.isArray(suppliers) && suppliers.map((supplier, index) => (
-                <ListItem
-                    key={index}
-                    title={`${supplier.FullName}`}
-                    description={`Email: ${supplier.Email} Phone: ${supplier.PhoneNumber}`}
-                    accessoryLeft={ItemImage}
-                    accessoryRight={() => Buttons({ supplier })}
-                />
-            ))}
+            <ScrollView>
+                {Array.isArray(suppliers) && suppliers.map((supplier, index) => (
+                    <ListItem
+                        key={index}
+                        title={`${supplier.FullName}`}
+                        description={`Email: ${supplier.Email} Phone: ${supplier.PhoneNumber}`}
+                        accessoryLeft={ItemImage}
+                        accessoryRight={() => Buttons({ supplier })}
+                    />
+                ))}
+            </ScrollView>
         </>
     );
 }

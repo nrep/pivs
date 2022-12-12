@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground, Platform, View } from 'react-native';
+import { ImageBackground, Platform, TouchableOpacity, View } from 'react-native';
 import {
     Button,
     Input,
@@ -15,6 +15,8 @@ import { CommentList } from './extra/comment-list.component';
 import { Product, ProductColor } from './extra/data-1';
 import QRCode from 'react-native-qrcode-svg';
 import axios from 'axios';
+import { captureRef } from 'react-native-view-shot';
+import Share from 'react-native-share';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -27,7 +29,12 @@ const keyboardOffset = (height) => Platform.select({
 
 export const ViewProductScreen = ({ navigation, route }) => {
     const [quantity, setQuantity] = React.useState(1);
+
+    const ref = React.useRef();
+
     const styles = useStyleSheet(themedStyles);
+
+    let svg;
 
     const { item, userCategory } = route.params;
 
@@ -36,7 +43,8 @@ export const ViewProductScreen = ({ navigation, route }) => {
             product: {
                 id: item.ProductId,
                 name: item.ProductName,
-                price: item.Price
+                price: item.Price,
+                quantity: item.Quantity
             },
             quantity
         });
@@ -50,7 +58,7 @@ export const ViewProductScreen = ({ navigation, route }) => {
     }
 
     const onDeleteButtonPress = () => {
-        axios.get(baseUrl + '/api.php?target=delete-product&id=' + product.CategoryId)
+        axios.get(baseUrl + '/api.php?target=delete-product&id=' + product.ProductId)
             .then(function (response) {
                 navigation && navigation.navigate('ViewProducts');
                 ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
@@ -60,34 +68,37 @@ export const ViewProductScreen = ({ navigation, route }) => {
             });
     }
 
-    const onAddButtonPress = () => {
-        navigation && navigation.navigate('ShoppingCart');
-    };
-
-    const renderColorItem = (color, index) => (
-        <Radio
-            key={index}
-            style={styles.colorRadio}
-        >
-            {evaProps => <Text {...evaProps} style={{ color: color.value, marginLeft: 10, }}>{color.description.toUpperCase()}</Text>}
-        </Radio>
-    );
+    const shareQR = () =>  {
+        svg.toDataURL((data) => {
+            const shareImageBase64 = {
+                title: "QR",
+                message: "Ehi, this is my QR code",
+                url: `data:image/png;base64,${data}`
+            };
+            Share.open(shareImageBase64);
+        });
+    }
 
     const renderHeader = () => (
         <Layout style={styles.header}>
             <ImageBackground
                 style={styles.image}
-                source={require('./assets/image-product-3.jpg')}
+                source={item.ImagePath ? { uri: baseUrl + '/' + item.ImagePath } : require('./assets/image-product-3.jpg')}
             />
             <Layout
                 style={styles.detailsContainer}
                 level='1'>
-                <QRCode
-                    value={JSON.stringify({
-                        id: item.ProductId,
-                        name: item.ProductName,
-                        price: item.Price,
-                    })} />
+                <TouchableOpacity onPress={shareQR}>
+                    <QRCode
+                        value={JSON.stringify({
+                            id: item.ProductId,
+                            name: item.ProductName,
+                            price: item.Price,
+                            quantity: item.Quantity
+                        })}
+                        getRef={(ref) => (svg = ref)}
+                    />
+                </TouchableOpacity>
                 <Text
                     category='h6'>
                     {item.ProductName}
@@ -149,6 +160,12 @@ export const ViewProductScreen = ({ navigation, route }) => {
                     </>
                 ) : (
                     <View style={styles.actionContainer}>
+                        <Button
+                            style={styles.actionButton}
+                            size='giant'
+                            onPress={shareQR}>
+                            Save QR
+                        </Button>
                         <Button
                             style={styles.actionButton}
                             size='giant'

@@ -4,6 +4,7 @@ import { StyleSheet, ToastAndroid, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reactotron from 'reactotron-react-native'
 import axios from 'axios';
+import { ScrollView } from 'react-native-gesture-handler';
 
 var baseUrl = "https://standtogetherforchange.org";
 
@@ -68,7 +69,7 @@ export const ViewCustomersScreen = ({ navigation }) => {
     }, []);
 
     return (
-        <>
+        <ScrollView>
             {Array.isArray(customers) && customers.map((customer, index) => (
                 <ListItem
                     key={index}
@@ -77,6 +78,6 @@ export const ViewCustomersScreen = ({ navigation }) => {
                     accessoryLeft={ItemImage}
                 />
             ))}
-        </>
+        </ScrollView>
     );
 }

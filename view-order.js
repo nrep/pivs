@@ -103,6 +103,14 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
                         <Text category='s1'>{order.Price * order.Quantity}</Text>
                     </Layout>
                 </Layout>
+                <Layout style={styles.layoutContainer}>
+                    <Layout style={styles.layout} level='4'>
+                        <Text category='s1'>Payment Status:</Text>
+                    </Layout>
+                    <Layout style={styles.layout} level='3'>
+                        <Text category='s1'>{order?.payment?.apiResult.status}</Text>
+                    </Layout>
+                </Layout>
                 {userCategory == "supplier" && (
                     <Card style={styles.card}>
                         <Input
