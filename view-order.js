@@ -68,6 +68,38 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
         });
     }
 
+    const setAsDelivered = async () => {
+        const params = {
+            target: 'set-order-status',
+            orderId: order.OrderId,
+            status: 'Delivered'
+        };
+
+        try {
+            // get the data from the api
+            const response = await axios({
+                method: 'get',
+                url: `${baseUrl}/api.php`,
+                params: params,
+            });
+
+            Reactotron.log({
+                response, params
+            });
+            // convert the data to json
+            if (response.status === 200) {
+                // set state with the result
+                order.Status = 'Delivered';
+            } else {
+                // Reactotron.log(response);
+                throw new Error("An error has occurred");
+            }
+        } catch (error) {
+            Reactotron.log({ error });
+            console.error(error);
+        }
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.formContainer}>
@@ -111,7 +143,22 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
                         <Text category='s1'>{order?.payment?.apiResult.status}</Text>
                     </Layout>
                 </Layout>
-                {userCategory == "supplier" && (
+                <Layout style={styles.layoutContainer}>
+                    <Layout style={styles.layout} level='4'>
+                        <Text category='s1'>Delivery Status:</Text>
+                    </Layout>
+                    <Layout style={styles.layout} level='3'>
+                        <Text category='s1'>{order?.Status}</Text>
+                    </Layout>
+                </Layout>
+                {order?.Status && order.Status !== 'Delivered' && <Button
+                    style={styles.passwordInput}
+                    size='giant'
+                    onPress={setAsDelivered}>
+                    SET AS DELIVERED
+                </Button>
+                }
+                {/* {userCategory == "supplier" && (
                     <Card style={styles.card}>
                         <Input
                             label={"Email"}
@@ -143,7 +190,7 @@ export const OrderDetailsScreen = ({ navigation, route }) => {
                             SEND EMAIL
                         </Button>
                     </Card>
-                )}
+                )} */}
             </View>
         </View>
     );
